@@ -1,0 +1,53 @@
+//server.js
+const fs = require('fs')
+const https = require('https')
+const express = require('express')
+const cors = require('cors')
+const dotenv = require('dotenv')
+const powerbiRoutes = require('./routes/powerbi')
+
+
+
+// Cargar variables de entorno
+dotenv.config()
+
+const app = express()
+
+const session = require('express-session')
+app.use(session({
+  secret: 'una_clave_secreta_segura',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // pon true si usas HTTPS en producción con dominio válido
+}))
+
+const passport = require('passport')
+passport.serializeUser((user, done) => {
+  done(null, user)
+})
+
+passport.deserializeUser((user, done) => {
+  done(null, user)
+})
+const authRoutes = require('./routes/auth')
+
+// Middleware
+app.use(cors())
+app.use(express.json())
+app.use(passport.initialize())
+
+// Rutas de autenticación
+app.use('/auth', authRoutes)
+app.use('/api/powerbi', powerbiRoutes)
+
+// Leer certificados SSL
+const httpsOptions = {
+  key: fs.readFileSync('./config/ssl/key.pem'),
+  cert: fs.readFileSync('./config/ssl/cert.pem')
+}
+
+const PORT = process.env.PORT || 3000
+
+https.createServer(httpsOptions, app).listen(PORT, () => {
+  console.log(`Servidor HTTPS corriendo en el puerto ${PORT}`)
+})

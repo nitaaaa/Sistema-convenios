@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@azure/msal-node": "^3.4.1",
+    "passport": "^0.7.0",
+    "passport-azure-ad": "^4.3.5",
+    "powerbi-client": "^2.23.1"
+  }
+}

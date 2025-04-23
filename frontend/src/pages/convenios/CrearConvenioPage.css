@@ -1,0 +1,38 @@
+.convenio-container {
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.convenio-form {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.componente-section, .cuota-section {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+}
+
+.indicador-item, .cuota-item {
+    background-color: #f8f9fa;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.btn-primary {
+    margin-top: 10px;
+}
+
+.alert {
+    margin-bottom: 20px;
+} 
