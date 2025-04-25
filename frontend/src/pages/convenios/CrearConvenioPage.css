@@ -1,7 +1,11 @@
-.convenio-container {
-    width: 100%;
+.container-fluid {
+    width: 80% !important;
+    min-width: 80vw;
     margin: 0 auto;
-    padding: 20px;
+}
+
+.seccion-container {
+    background-color: #f5f5f5;
 }
 
 .convenio-form {
@@ -9,6 +13,7 @@
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
 }
 
 .componente-section, .cuota-section {
@@ -16,6 +21,7 @@
     padding: 15px;
     border: 1px solid #dee2e6;
     border-radius: 5px;
+    width: 100%;
 }
 
 .indicador-item, .cuota-item {
@@ -23,16 +29,37 @@
     padding: 10px;
     margin: 10px 0;
     border-radius: 4px;
+    width: 100%;
 }
 
 .form-group {
     margin-bottom: 1.5rem;
+    width: 100%;
 }
 
 .btn-primary {
-    margin-top: 10px;
+    
 }
 
 .alert {
     margin-bottom: 20px;
+}
+
+
+.row {
+    width: 100%;
+    margin: 0;
+}
+
+/* Media queries para diferentes tamaños de pantalla */
+@media (max-width: 768px) {
+    .convenio-container {
+        width: 95% !important;
+        min-width: 95vw;
+        padding: 10px;
+    }
+    
+    .convenio-form {
+        padding: 15px;
+    }
 } 

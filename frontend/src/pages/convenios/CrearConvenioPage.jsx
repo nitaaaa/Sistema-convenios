@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Container, Form, Button, Alert, Row, Col } from 'react-bootstrap'
-//import './CrearConvenioPage.css'
+import './CrearConvenioPage.css'
 
 function CrearConvenioPage() {
   const [formData, setFormData] = useState({
@@ -192,135 +192,138 @@ function CrearConvenioPage() {
   }
 
   return (
-    <Container className="convenio-container">
+    <Container fluid className="px-4">
       <h2>Crear Nuevo Convenio</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
-      
       <Form onSubmit={handleSubmit} className="convenio-form">
-        <Form.Group className="mb-3">
-          <Form.Label>Nombre del Convenio</Form.Label>
-          <Form.Control
-            type="text"
-            name="nombre"
-            value={formData.nombre}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Descripción</Form.Label>
-          <Form.Control
-            as="textarea"
-            name="descripcion"
-            value={formData.descripcion}
-            onChange={handleChange}
-            rows={3}
-          />
-        </Form.Group>
+        <div className="seccion-container border rounded mb-3 p-3">
+          <h4>Datos del Convenio</h4>
+          <Form.Group className="mb-3">
+            <Form.Label>Nombre del Convenio</Form.Label>
+            <Form.Control
+              type="text"
+              name="nombre"
+              value={formData.nombre}
+              onChange={handleChange}
+              required
+            />
+          </Form.Group>
 
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Fecha de Inicio</Form.Label>
-              <Form.Control
-                type="date"
-                name="fechaInicio"
-                value={formData.fechaInicio}
-                onChange={handleChange}
-                required
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Fecha de Fin</Form.Label>
-              <Form.Control
-                type="date"
-                name="fechaFin"
-                value={formData.fechaFin}
-                onChange={handleChange}
-                required
-              />
-            </Form.Group>
-          </Col>
-        </Row>
+          <Form.Group className="mb-3">
+            <Form.Label>Descripción</Form.Label>
+            <Form.Control
+              as="textarea"
+              name="descripcion"
+              value={formData.descripcion}
+              onChange={handleChange}
+              rows={3}
+            />
+          </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Monto</Form.Label>
-          <Form.Control
-            type="number"
-            name="monto"
-            value={formData.monto}
-            onChange={handleChange}
-            required
-            min="0"
-            step="0.01"
-          />
-        </Form.Group>
-
-        <div className="mb-4">
-          <h4>Cuotas</h4>
-          <div className="mb-3 p-3 border rounded">
-            <Row className="mb-3">
-              <Col md={4}>
-                <Form.Label>Fecha de Rendición</Form.Label>
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Fecha de Inicio</Form.Label>
                 <Form.Control
                   type="date"
-                  value={nuevaCuota.fechaRendicion}
-                  onChange={(e) => setNuevaCuota({ ...nuevaCuota, fechaRendicion: e.target.value })}
+                  name="fechaInicio"
+                  value={formData.fechaInicio}
+                  onChange={handleChange}
+                  required
                 />
-                {erroresCuotas.fecha && (
-                  <small className="text-danger">{erroresCuotas.fecha}</small>
-                )}
-              </Col>
-            </Row>
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Fecha de Fin</Form.Label>
+                <Form.Control
+                  type="date"
+                  name="fechaFin"
+                  value={formData.fechaFin}
+                  onChange={handleChange}
+                  required
+                />
+              </Form.Group>
+            </Col>
+          </Row>
 
-            <div className="mb-3">
-              <h6>Porcentajes de Cumplimiento</h6>
-              {nuevaCuota.porcentajes.map((porcentaje, index) => (
-                <Row key={index} className="mb-2">
-                  <Col md={5}>
-                    <Form.Control
-                      type="number"
-                      placeholder="Porcentaje de cumplimiento"
-                      value={porcentaje.valor}
-                      onChange={(e) => handlePorcentajeChange(index, 'valor', e.target.value)}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                    />
-                  </Col>
-                  <Col md={5}>
-                    <Form.Control
-                      type="number"
-                      placeholder="Descuento asociado (%)"
-                      value={porcentaje.descuento}
-                      onChange={(e) => handlePorcentajeChange(index, 'descuento', e.target.value)}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                    />
-                  </Col>
-                  {index === nuevaCuota.porcentajes.length - 1 && (
-                    <Col xs="auto">
-                      <Button variant="outline-primary" onClick={handleAddPorcentaje}>
-                        +
-                      </Button>
-                    </Col>
-                  )}
-                </Row>
-              ))}
-              {erroresCuotas.porcentajes && (
-                <small className="text-danger">{erroresCuotas.porcentajes}</small>
+          <Form.Group className="mb-3">
+            <Form.Label>Monto</Form.Label>
+            <Form.Control
+              type="number"
+              name="monto"
+              value={formData.monto}
+              onChange={handleChange}
+              required
+              min="0"
+              step="0.01"
+            />
+          </Form.Group>
+        </div>
+
+         
+        <div className="seccion-container border rounded mb-3 p-3">
+          <h4>Cuotas</h4>
+          <Row className="mb-3">
+            <Col md={4}>
+              <Form.Label>Fecha de Rendición</Form.Label>
+              <Form.Control
+                type="date"
+                value={nuevaCuota.fechaRendicion}
+                onChange={(e) => setNuevaCuota({ ...nuevaCuota, fechaRendicion: e.target.value })}
+              />
+              {erroresCuotas.fecha && (
+                <small className="text-danger">{erroresCuotas.fecha}</small>
               )}
-            </div>
+            </Col>
+          </Row>
 
-            <Button variant="primary" onClick={handleAddCuota}>
-              Agregar Cuota
-            </Button>
+          <div className="mb-3">
+            <h6>Porcentajes de Cumplimiento</h6>
+            {nuevaCuota.porcentajes.map((porcentaje, index) => (
+              <Row key={index} className="mb-2">
+                <Col md={5}>
+                  <Form.Control
+                    type="number"
+                    placeholder="Porcentaje de cumplimiento"
+                    value={porcentaje.valor}
+                    onChange={(e) => handlePorcentajeChange(index, 'valor', e.target.value)}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                  />
+                </Col>
+                <Col md={5}>
+                  <Form.Control
+                    type="number"
+                    placeholder="Descuento asociado (%)"
+                    value={porcentaje.descuento}
+                    onChange={(e) => handlePorcentajeChange(index, 'descuento', e.target.value)}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                  />
+                </Col>
+                {index === nuevaCuota.porcentajes.length - 1 && (
+                  <Col xs="auto">
+                    <Button variant="outline-primary" onClick={handleAddPorcentaje}>
+                      +
+                    </Button>
+                  </Col>
+                )}
+              </Row>
+            ))}
+            {erroresCuotas.porcentajes && (
+              <small className="text-danger">{"  " + erroresCuotas.porcentajes}</small>
+            )}
           </div>
+
+          <Button variant="primary" onClick={handleAddCuota}>
+            Agregar Cuota
+          </Button>
+        
 
           {formData.cuotas.map((cuota, index) => (
             <div key={index} className="mb-3 p-3 border rounded">
@@ -338,7 +341,8 @@ function CrearConvenioPage() {
           ))}
         </div>
 
-        <div className="mb-4">
+
+        <div className="seccion-container border rounded mb-4 p-3">
           <h4>Componentes</h4>
           <div className="mb-3">
             <Row>
