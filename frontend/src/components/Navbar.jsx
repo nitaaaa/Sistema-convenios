@@ -6,6 +6,7 @@ import './Navbar.css';
 function AppNavbar() {
   const navigate = useNavigate();
 
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');

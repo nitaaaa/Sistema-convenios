@@ -1,0 +1,71 @@
+.convenio-form {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.seccion-container {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.seccion-container h4 {
+  color: #0d6efd;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.seccion-container h5 {
+  color: #495057;
+  margin-bottom: 15px;
+  font-weight: 500;
+}
+
+.seccion-container h6 {
+  color: #6c757d;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+.btn-success {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+.btn-success:hover {
+  background-color: #157347;
+  border-color: #146c43;
+}
+
+.text-danger {
+  color: #dc3545;
+}
+
+.text-success {
+  color: #198754;
+}
+
+@media (max-width: 768px) {
+  .convenio-form {
+    padding: 10px;
+  }
+  
+  .seccion-container {
+    padding: 15px;
+  }
+} 

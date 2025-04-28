@@ -363,7 +363,7 @@ function CrearConvenioPage() {
           </div>
 
           {formData.componentes.map((componente, componenteIndex) => (
-            <div key={componenteIndex} className="mb-4 p-3 border rounded">
+            <div key={componenteIndex} className="mb-4 p-3 border rounded border-black">
               <h5>Componente: {componente.nombre}</h5>
               
               <div className="mb-3">
