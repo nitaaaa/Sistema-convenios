@@ -8,16 +8,17 @@ import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
   <div style={{ 
-    backgroundImage: `url(${LogoPuertoMontt}), url(${LogoMuni})`, 
+    backgroundImage: `url(${LogoPuertoMontt}),  url(${LogoMuni})`, 
     backgroundPosition: 'left center, right center',
     backgroundRepeat: 'no-repeat, no-repeat',
     backgroundSize: '400px 400px, 400px 400px', // Ajusta el tamaño de cada imagen
+    backgroundAttachment: 'fixed, fixed',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center'
   }}>
   <StrictMode>
     <App />
-  </StrictMode>,
+  </StrictMode>
   </div>
 )

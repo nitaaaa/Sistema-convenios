@@ -1,0 +1,23 @@
+.editar-usuario-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.editar-usuario-container h2 {
+  color: #0d6efd;
+  margin-bottom: 30px;
+  font-weight: 600;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+  color: #0d6efd;
+}
+
+@media (max-width: 768px) {
+  .editar-usuario-container {
+    padding: 15px;
+  }
+} 

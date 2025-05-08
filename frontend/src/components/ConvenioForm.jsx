@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Form, Button, Alert, Row, Col } from 'react-bootstrap'
 import './ConvenioForm.css'
 
-function ConvenioForm({ initialData, onSubmit, modo = "crear" }) {
+function ConvenioForm({ initialData, onSubmit, modo}) {
   const [formData, setFormData] = useState(initialData)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -180,9 +180,57 @@ function ConvenioForm({ initialData, onSubmit, modo = "crear" }) {
     })
   }
 
+  const handleCuotaChange = (index, field, value) => {
+    setFormData(prev => {
+      const nuevosCuotas = [...prev.cuotas]
+      nuevosCuotas[index][field] = value
+      return {
+        ...prev,
+        cuotas: nuevosCuotas
+      }
+    })
+  }
+
+  const handlePorcentajeCuotaChange = (index, i, field, value) => {
+    setFormData(prev => {
+      const nuevosCuotas = [...prev.cuotas]
+      const nuevosPorcentajes = [...nuevosCuotas[index].porcentajes]
+      nuevosPorcentajes[i][field] = value
+      nuevosCuotas[index].porcentajes = nuevosPorcentajes
+      return {
+        ...prev,
+        cuotas: nuevosCuotas
+      }
+    })
+  }
+
+  const handleComponenteChange = (componenteIndex, field, value) => {
+    setFormData(prev => {
+      const nuevosComponentes = [...prev.componentes]
+      nuevosComponentes[componenteIndex][field] = value
+      return {
+        ...prev,
+        componentes: nuevosComponentes
+      }
+    })
+  }
+
+  const handleIndicadorEdit = (componenteIndex, indicadorIndex, field, value) => {
+    setFormData(prev => {
+      const nuevosComponentes = [...prev.componentes]
+      const nuevosIndicadores = [...nuevosComponentes[componenteIndex].indicadores]
+      nuevosIndicadores[indicadorIndex][field] = value
+      nuevosComponentes[componenteIndex].indicadores = nuevosIndicadores
+      return {
+        ...prev,
+        componentes: nuevosComponentes
+      }
+    })
+  }
+
   return (
     <Form onSubmit={handleSubmit} className="convenio-form">
-      <div className="seccion-container border rounded mb-3 p-3">
+      <div className="seccion-container mb-3 p-3">
         <h4>Datos del Convenio</h4>
         <Form.Group className="mb-3">
           <Form.Label>Nombre del Convenio</Form.Label>
@@ -232,22 +280,39 @@ function ConvenioForm({ initialData, onSubmit, modo = "crear" }) {
             </Form.Group>
           </Col>
         </Row>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Monto</Form.Label>
-          <Form.Control
-            type="number"
-            name="monto"
-            value={formData.monto}
-            onChange={handleChange}
-            required
-            min="0"
-            step="0.01"
-          />
-        </Form.Group>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Establecimiento</Form.Label>
+              <Form.Select
+                name="establecimiento"
+                value={formData.establecimiento}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Seleccione un establecimiento</option>
+                {/* Aquí puedes agregar opciones en el futuro */}
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Monto</Form.Label>
+              <Form.Control
+                type="number"
+                name="monto"
+                value={formData.monto}
+                onChange={handleChange}
+                required
+                min="0"
+                step="0.01"
+              />
+            </Form.Group>
+          </Col>
+        </Row>
       </div>
 
-      <div className="seccion-container border rounded mb-3 p-3">
+      <div className="seccion-container mb-3 p-3">
         <h4>Cuotas</h4>
         <Row className="mb-3">
           <Col md={4}>
@@ -308,15 +373,51 @@ function ConvenioForm({ initialData, onSubmit, modo = "crear" }) {
         </Button>
 
         {formData.cuotas.map((cuota, index) => (
-          <div key={index} className="mb-3 p-3 border rounded">
+          <div key={index} className="mb-3 p-3 border rounded border-black">
             <h5>Cuota {index + 1}</h5>
-            <p><strong>Fecha de Rendición:</strong> {cuota.fechaRendicion}</p>
+            <Form.Group className="mb-2">
+              <Form.Label>Fecha de Rendición</Form.Label>
+              {modo === "modificar" ? (
+                <Form.Control
+                  type="date"
+                  value={cuota.fechaRendicion}
+                  onChange={e => handleCuotaChange(index, 'fechaRendicion', e.target.value)}
+                />
+              ) : (
+                <p><strong>{cuota.fechaRendicion}</strong></p>
+              )}
+            </Form.Group>
             <h6>Porcentajes de Cumplimiento:</h6>
             {cuota.porcentajes.map((p, i) => (
               <div key={i} className="mb-2">
-                <p>
-                  Cumplimiento: {p.valor}% - Descuento: {p.descuento}%
-                </p>
+                {modo === "modificar" ? (
+                  <Row>
+                    <Col md={5}>
+                      <Form.Control
+                        type="number"
+                        value={p.valor}
+                        onChange={e => handlePorcentajeCuotaChange(index, i, 'valor', e.target.value)}
+                        min="0"
+                        max="100"
+                        step="0.01"
+                      />
+                    </Col>
+                    <Col md={5}>
+                      <Form.Control
+                        type="number"
+                        value={p.descuento}
+                        onChange={e => handlePorcentajeCuotaChange(index, i, 'descuento', e.target.value)}
+                        min="0"
+                        max="100"
+                        step="0.01"
+                      />
+                    </Col>
+                  </Row>
+                ) : (
+                  <p>
+                    Cumplimiento: {p.valor}% - Descuento: {p.descuento}%
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -344,82 +445,73 @@ function ConvenioForm({ initialData, onSubmit, modo = "crear" }) {
         </div>
 
         {formData.componentes.map((componente, componenteIndex) => (
-          <div key={componenteIndex} className="mb-4 p-3 border rounded">
-            <h5>Componente: {componente.nombre}</h5>
-            
+          <div key={componenteIndex} className="mb-4 p-3 border rounded border-black">
+            <h5>
+              {modo === "modificar" ? (
+                <Form.Control
+                  type="text"
+                  value={componente.nombre}
+                  onChange={e => handleComponenteChange(componenteIndex, 'nombre', e.target.value)}
+                />
+              ) : (
+                <>Componente: {componente.nombre}</>
+              )}
+            </h5>
             <div className="mb-3">
               <h6>Indicadores</h6>
-              <div className="mb-3">
-                <Row className="g-2">
-                  <Col md={3}>
-                    <Form.Control
-                      type="text"
-                      placeholder="Nombre del indicador"
-                      value={componente.nuevoIndicador.nombre}
-                      onChange={(e) => handleIndicadorChange(componenteIndex, 'nombre', e.target.value)}
-                    />
-                  </Col>
-                  <Col md={2}>
-                    <Form.Control
-                      type="text"
-                      placeholder="Numerador"
-                      value={componente.nuevoIndicador.numerador}
-                      onChange={(e) => handleIndicadorChange(componenteIndex, 'numerador', e.target.value)}
-                    />
-                  </Col>
-                  <Col md={2}>
-                    <Form.Control
-                      type="text"
-                      placeholder="Denominador"
-                      value={componente.nuevoIndicador.denominador}
-                      onChange={(e) => handleIndicadorChange(componenteIndex, 'denominador', e.target.value)}
-                    />
-                  </Col>
-                  <Col md={2}>
-                    <Form.Control
-                      type="number"
-                      placeholder="Peso Final (%)"
-                      value={componente.nuevoIndicador.pesoFinal}
-                      onChange={(e) => handleIndicadorChange(componenteIndex, 'pesoFinal', e.target.value)}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                    />
-                  </Col>
-                  <Col md={2}>
-                    <Form.Control
-                      type="text"
-                      placeholder="Fuente"
-                      value={componente.nuevoIndicador.fuente}
-                      onChange={(e) => handleIndicadorChange(componenteIndex, 'fuente', e.target.value)}
-                    />
-                  </Col>
-                  <Col xs="auto">
-                    <div className="d-flex flex-row align-items-center">
-                      <Button 
-                        variant="success" 
-                        onClick={() => handleAddIndicador(componenteIndex)}
-                      >
-                        Agregar
-                      </Button>
-                      {erroresIndicadores[componenteIndex] && (
-                        <small className="text-danger ms-2">
-                          {erroresIndicadores[componenteIndex]}
-                        </small>
-                      )}
-                    </div>
-                  </Col>
-                </Row>
-              </div>
-
               {componente.indicadores.map((indicador, indicadorIndex) => (
                 <div key={indicadorIndex} className="mb-2 p-2 border rounded">
                   <Row>
-                    <Col md={3}><strong>Nombre:</strong> {indicador.nombre}</Col>
-                    <Col md={2}><strong>Numerador:</strong> {indicador.numerador}</Col>
-                    <Col md={2}><strong>Denominador:</strong> {indicador.denominador}</Col>
-                    <Col md={2}><strong>Peso Final:</strong> {indicador.pesoFinal}%</Col>
-                    <Col md={2}><strong>Fuente:</strong> {indicador.fuente}</Col>
+                    {modo === "modificar" ? (
+                      <>
+                        <Col md={3}>
+                          <Form.Control
+                            type="text"
+                            value={indicador.nombre}
+                            onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'nombre', e.target.value)}
+                          />
+                        </Col>
+                        <Col md={2}>
+                          <Form.Control
+                            type="text"
+                            value={indicador.numerador}
+                            onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'numerador', e.target.value)}
+                          />
+                        </Col>
+                        <Col md={2}>
+                          <Form.Control
+                            type="text"
+                            value={indicador.denominador}
+                            onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'denominador', e.target.value)}
+                          />
+                        </Col>
+                        <Col md={2}>
+                          <Form.Control
+                            type="number"
+                            value={indicador.pesoFinal}
+                            onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'pesoFinal', e.target.value)}
+                            min="0"
+                            max="100"
+                            step="0.01"
+                          />
+                        </Col>
+                        <Col md={2}>
+                          <Form.Control
+                            type="text"
+                            value={indicador.fuente}
+                            onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'fuente', e.target.value)}
+                          />
+                        </Col>
+                      </>
+                    ) : (
+                      <>
+                        <Col md={3}><strong>Nombre:</strong> {indicador.nombre}</Col>
+                        <Col md={2}><strong>Numerador:</strong> {indicador.numerador}</Col>
+                        <Col md={2}><strong>Denominador:</strong> {indicador.denominador}</Col>
+                        <Col md={2}><strong>Peso Final:</strong> {indicador.pesoFinal}%</Col>
+                        <Col md={2}><strong>Fuente:</strong> {indicador.fuente}</Col>
+                      </>
+                    )}
                   </Row>
                 </div>
               ))}

@@ -24,7 +24,11 @@ passport.use(new OIDCStrategy({
 
 router.use(passport.initialize())
 
-router.get('/microsoft', passport.authenticate('azuread-openidconnect'))
+router.get('/microsoft', (req, res, next) => {
+  passport.authenticate('azuread-openidconnect', {
+    prompt: 'select_account' //Obliga a que el usuario seleccione una cuenta al iniciar sesión
+  })(req, res, next);
+})
 
 router.get('/microsoft/callback', passport.authenticate('azuread-openidconnect', {
   failureRedirect: `${process.env.FRONTEND_URL}/login`
@@ -33,7 +37,7 @@ router.get('/microsoft/callback', passport.authenticate('azuread-openidconnect',
   const token = jwt.sign({
     email: user._json.preferred_username,
     nombre: user.displayName
-  }, 'secreto', { expiresIn: '1h' })
+  }, process.env.JWT_SECRET, { expiresIn: '1h' })
 
   res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}`)
 })

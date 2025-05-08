@@ -1,165 +1,81 @@
 import { useState, useEffect } from 'react'
-import { Container, Form, Button, Alert, Table } from 'react-bootstrap'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Alert, Spinner } from 'react-bootstrap'
+import ConvenioForm from '../../components/ConvenioForm'
+import { obtenerConvenioPorId, actualizarConvenio } from '../../services/convenioService'
 
 function ModificarConvenioPage() {
   const { id } = useParams()
-  const [convenios, setConvenios] = useState([])
-  const [selectedConvenio, setSelectedConvenio] = useState(null)
-  const [formData, setFormData] = useState({
-    nombre: '',
-    descripcion: '',
-    fechaInicio: '',
-    fechaFin: '',
-    estado: 'activo'
-  })
+  const navigate = useNavigate()
+  const [formData, setFormData] = useState(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Aquí irá la lógica para cargar los convenios
-    const conveniosEjemplo = [
-      { id: 1, nombre: 'Convenio 1', descripcion: 'Descripción 1', fechaInicio: '2024-01-01', fechaFin: '2024-12-31', estado: 'activo' },
-      { id: 2, nombre: 'Convenio 2', descripcion: 'Descripción 2', fechaInicio: '2024-02-01', fechaFin: '2024-11-30', estado: 'inactivo' }
-    ]
-    setConvenios(conveniosEjemplo)
-  }, [])
+    const fetchConvenio = async () => {
+      try {
+        const convenio = await obtenerConvenioPorId(id)
+        if (!convenio) {
+          setError('No se encontró el convenio solicitado.')
+        } else {
+          setFormData({
+            ...convenio,
+            componentes: convenio.componentes || [],
+            cuotas: convenio.cuotas || []
+          })
+        }
+      } catch (err) {
+        setError('Error al cargar el convenio')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchConvenio()
+  }, [id])
 
-  const handleSelectConvenio = (convenio) => {
-    setSelectedConvenio(convenio)
-    setFormData({
-      nombre: convenio.nombre,
-      descripcion: convenio.descripcion,
-      fechaInicio: convenio.fechaInicio,
-      fechaFin: convenio.fechaFin,
-      estado: convenio.estado
-    })
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (data) => {
     setError('')
     setSuccess('')
-
     try {
-      // Aquí irá la lógica para modificar el convenio
-      console.log('Datos del convenio a modificar:', formData)
+      await actualizarConvenio(id, data)
       setSuccess('Convenio modificado exitosamente')
-    } catch (error) {
+      setTimeout(() => {
+        navigate('/convenios')
+      }, 2000)
+    } catch (err) {
       setError('Error al modificar el convenio')
     }
   }
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 200 }}>
+        <Spinner animation="border" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mt-4">
+        <Alert variant="danger">{error}</Alert>
+      </div>
+    )
   }
 
   return (
-    <Container className="mt-4">
+    <div className="container mt-4">
       <h2>Modificar Convenio</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
-
-      <div className="mb-4">
-        <h4>Seleccionar Convenio</h4>
-        <Table striped bordered hover>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {convenios.map(convenio => (
-              <tr key={convenio.id}>
-                <td>{convenio.id}</td>
-                <td>{convenio.nombre}</td>
-                <td>{convenio.estado}</td>
-                <td>
-                  <Button 
-                    variant="primary" 
-                    size="sm"
-                    onClick={() => handleSelectConvenio(convenio)}
-                  >
-                    Seleccionar
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </div>
-
-      {selectedConvenio && (
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
-            <Form.Label>Nombre del Convenio</Form.Label>
-            <Form.Control
-              type="text"
-              name="nombre"
-              value={formData.nombre}
-              onChange={handleChange}
-              required
-            />
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Descripción</Form.Label>
-            <Form.Control
-              as="textarea"
-              name="descripcion"
-              value={formData.descripcion}
-              onChange={handleChange}
-              rows={3}
-            />
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Fecha de Inicio</Form.Label>
-            <Form.Control
-              type="date"
-              name="fechaInicio"
-              value={formData.fechaInicio}
-              onChange={handleChange}
-              required
-            />
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Fecha de Fin</Form.Label>
-            <Form.Control
-              type="date"
-              name="fechaFin"
-              value={formData.fechaFin}
-              onChange={handleChange}
-              required
-            />
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Estado</Form.Label>
-            <Form.Select
-              name="estado"
-              value={formData.estado}
-              onChange={handleChange}
-            >
-              <option value="activo">Activo</option>
-              <option value="inactivo">Inactivo</option>
-            </Form.Select>
-          </Form.Group>
-
-          <Button variant="primary" type="submit">
-            Guardar Cambios
-          </Button>
-        </Form>
+      {formData && (
+        <ConvenioForm
+          initialData={formData}
+          onSubmit={handleSubmit}
+          modo="modificar"
+        />
       )}
-    </Container>
+    </div>
   )
 }
 

@@ -1,94 +1,43 @@
 import { useState } from 'react'
-import { Container, Form, Button, Alert } from 'react-bootstrap'
+import { Container } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
+import UsuarioForm from '../../components/UsuarioForm'
+import axios from 'axios'
+import './CrearUsuarioPage.css'
 
 function CrearUsuarioPage() {
   const navigate = useNavigate()
-  const [formData, setFormData] = useState({
-    nombre: '',
-    email: '',
-    rol: 'usuario'
-  })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
-
+  const handleSubmit = async (formData) => {
     try {
-      // Aquí irá la lógica para crear el usuario
-      console.log('Creando usuario:', formData)
+      const token = localStorage.getItem('authToken')
+      await axios.post('/api/usuarios',formData,{
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
       setSuccess('Usuario creado exitosamente')
-      setTimeout(() => {
+      /*setTimeout(() => {
         navigate('/usuarios')
-      }, 2000)
+      }, 2000)*/
     } catch (error) {
-      setError('Error al crear el usuario')
+      setError(
+        error.response?.data?.message ||
+        'Error al crear el usuario'
+      )
     }
   }
 
   return (
-    <Container className="mt-4">
+    <Container className="crear-usuario-container mt-4">
       <h2>Crear Usuario</h2>
-
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && <Alert variant="success">{success}</Alert>}
-
-      <Form onSubmit={handleSubmit}>
-        <Form.Group className="mb-3">
-          <Form.Label>Nombre</Form.Label>
-          <Form.Control
-            type="text"
-            name="nombre"
-            value={formData.nombre}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Email</Form.Label>
-          <Form.Control
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Rol</Form.Label>
-          <Form.Select
-            name="rol"
-            value={formData.rol}
-            onChange={handleChange}
-            required
-          >
-            <option value="usuario">Usuario</option>
-            <option value="admin">Administrador</option>
-          </Form.Select>
-        </Form.Group>
-
-        <div className="d-flex gap-2">
-          <Button variant="primary" type="submit">
-            Crear Usuario
-          </Button>
-          <Button variant="secondary" onClick={() => navigate('/usuarios')}>
-            Cancelar
-          </Button>
-        </div>
-      </Form>
+      <UsuarioForm 
+        onSubmit={handleSubmit}
+        modo="crear"
+      />
     </Container>
   )
 }

@@ -4,6 +4,13 @@ import { jwtDecode } from 'jwt-decode'
 import axios from 'axios'
 import logoMicrosoft from '../assets/Logo-Microsoft.png'
 import './LoginPage.css'
+import { EXPIRATION_TIME } from '../../constans';
+
+function guardarSesion(token, userData) {
+  localStorage.setItem('authToken', token);
+  localStorage.setItem('expiresAt', EXPIRATION_TIME);
+  localStorage.setItem('userData', JSON.stringify(userData));
+}
 
 function LoginPage() {
   const location = useLocation()
@@ -18,14 +25,10 @@ function LoginPage() {
 
     if (token) {
       const decoded = jwtDecode(token)
-      // Guardamos el token y los datos del usuario
-      localStorage.setItem('authToken', token)
-      localStorage.setItem('userData', JSON.stringify({
+      guardarSesion(token, {
         email: decoded.email,
         nombre: decoded.nombre
-      }))
-
-      // Redirigimos a la página de reportes
+      });
       navigate('/reportes')
     }
   }, [location, navigate])
@@ -34,10 +37,8 @@ function LoginPage() {
     e.preventDefault()
     setError('')
     try {
-      // Cambia la URL por la de tu backend
       const res = await axios.post('/api/auth/login', { email, password })
-      localStorage.setItem('authToken', res.data.token)
-      localStorage.setItem('userData', JSON.stringify(res.data.user))
+      guardarSesion(res.data.token, res.data.user)
       navigate('/reportes')
     } catch (err) {
       setError('Usuario o contraseña incorrectos')

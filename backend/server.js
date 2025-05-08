@@ -5,6 +5,9 @@ const express = require('express')
 const cors = require('cors')
 const dotenv = require('dotenv')
 const powerbiRoutes = require('./routes/powerbi')
+const usuarioRoutes = require('./routes/usuario')
+const establecimientoRoutes = require('./routes/establecimientos')
+const comunasRoutes = require('./routes/comunas')
 
 
 
@@ -39,6 +42,9 @@ app.use(passport.initialize())
 // Rutas de autenticación
 app.use('/auth', authRoutes)
 app.use('/api/powerbi', powerbiRoutes)
+app.use('/api/usuarios', usuarioRoutes)
+app.use('/api/establecimientos', establecimientoRoutes)
+app.use('/api/comunas', comunasRoutes)
 
 // Leer certificados SSL
 const httpsOptions = {

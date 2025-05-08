@@ -15,7 +15,7 @@ function ReportesPage() {
         setError(null)
         
         const response = await axios.get('/api/powerbi/embed-info')
-        console.log('Información de incrustación:', response.data)
+        
         setEmbedInfo(response.data)
       } catch (error) {
         console.error('Error al cargar informe:', error)
