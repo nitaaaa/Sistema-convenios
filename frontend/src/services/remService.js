@@ -14,7 +14,7 @@ export const subirRemArchivos = async (archivos) => {
       },
       validateStatus: (status) => status >= 200 && status < 300 || status === 207
     });
-    return response.data;
+    return { status: response.status, ...response.data };
   } catch (error) {
     if (error.response && error.response.data) {
       throw error.response.data;

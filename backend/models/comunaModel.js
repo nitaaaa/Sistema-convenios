@@ -5,4 +5,9 @@ async function listarComunas() {
   return rows;
 }
 
-module.exports = { listarComunas }; 
+async function buscarComunaPorNombre(nombre) {
+  const [rows] = await db.execute('SELECT * FROM comunas WHERE nombre = ?', [nombre]);
+  return rows[0];
+}
+
+module.exports = { listarComunas, buscarComunaPorNombre }; 

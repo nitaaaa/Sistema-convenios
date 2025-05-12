@@ -62,6 +62,7 @@ function SubirRemPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setDetalles(null);
+    setSuccess('');
     if (files.length === 0) {
       setError('Por favor, selecciona al menos un archivo');
       return;
@@ -69,20 +70,24 @@ function SubirRemPage() {
     setLoading(true);
     try {
       const resp = await subirRemArchivos(files);
-      setSuccess(resp.mensaje || 'Archivos subidos exitosamente');
-      setDetalles(null);
-      setFiles([]);
-      setError('');
-    } catch (err) {
-      if (err.archivosNoGuardados) {
-        setSuccess(err.mensaje || 'Algunos archivos no fueron guardados');
-        setDetalles(err);
+      console.log(resp.status);
+      if(resp.status === 200){
+        setSuccess(resp.mensaje || 'Archivos subidos exitosamente');
+        setDetalles(null);
+        setFiles([]);
+        setError('');
+      } else if (resp.status === 207) {
+        setSuccess('Algunos archivos no fueron guardados');
+        setDetalles(resp);
         setFiles([]);
         setError('');
       } else {
-        setError('Error al subir los archivos: ' + (err.mensaje || err.message || 'Error desconocido'));
+        setError('Error al subir los archivos: ' + (resp.mensaje || resp.message || 'Error desconocido'));
         setDetalles(null);
       }
+    } catch (err) {
+        setError('Error al subir los archivos: ' + (err.mensaje || err.message || 'Error desconocido'));
+       
     } finally {
       setLoading(false);
     }
@@ -93,7 +98,7 @@ function SubirRemPage() {
       <h2 className="mb-4">Subir Archivos REM</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
-      {detalles && (
+      {detalles && detalles.archivosNoGuardados && detalles.archivosNoGuardados.length > 0 && (
         <Alert variant="warning" className="mt-2">
           <strong>Detalle de archivos no guardados:</strong>
           <ul className="mb-0">

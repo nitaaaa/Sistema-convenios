@@ -18,4 +18,9 @@ async function listarEstablecimientosPorComuna(comunas_id) {
   return rows;
 }
 
-module.exports = { crearEstablecimiento, listarEstablecimientos, listarEstablecimientosPorComuna }; 
+async function buscarEstablecimientoPorNombreYComuna(nombre, comunas_id) {
+  const [rows] = await db.execute('SELECT * FROM establecimientos WHERE nombre = ? AND Comunas_id = ?', [nombre, comunas_id]);
+  return rows[0];
+}
+
+module.exports = { crearEstablecimiento, listarEstablecimientos, listarEstablecimientosPorComuna, buscarEstablecimientoPorNombreYComuna }; 
