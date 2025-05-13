@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import UsuarioForm from '../../components/UsuarioForm'
 import axios from 'axios'
 import './CrearUsuarioPage.css'
+import { crearUsuario } from '../../services/usuarioService'
 
 function CrearUsuarioPage() {
   const navigate = useNavigate()
@@ -13,16 +14,8 @@ function CrearUsuarioPage() {
   const handleSubmit = async (formData) => {
     try {
       const token = localStorage.getItem('authToken')
-      await axios.post('/api/usuarios',formData,{
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      )
+      await crearUsuario(formData, token)
       setSuccess('Usuario creado exitosamente')
-      /*setTimeout(() => {
-        navigate('/usuarios')
-      }, 2000)*/
     } catch (error) {
       setError(
         error.response?.data?.message ||

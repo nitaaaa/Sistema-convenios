@@ -23,4 +23,14 @@ async function buscarEstablecimientoPorNombreYComuna(nombre, comunas_id) {
   return rows[0];
 }
 
-module.exports = { crearEstablecimiento, listarEstablecimientos, listarEstablecimientosPorComuna, buscarEstablecimientoPorNombreYComuna }; 
+async function buscarUsuariosPorEstablecimiento(establecimientoId) {
+  const [rows] = await db.execute(
+    `SELECT u.* FROM usuarios u
+     INNER JOIN establecimientos_usuarios eu ON u.rut = eu.Usuarios_rut
+     WHERE eu.Establecimientos_id = ?`,
+    [establecimientoId]
+  );
+  return rows;
+}
+
+module.exports = { crearEstablecimiento, listarEstablecimientos, listarEstablecimientosPorComuna, buscarEstablecimientoPorNombreYComuna, buscarUsuariosPorEstablecimiento }; 

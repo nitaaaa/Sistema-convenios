@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Form, Button, Alert, Row, Col } from 'react-bootstrap'
 import './UsuarioForm.css'
 import cleanIcon from '../assets/clean.png'
+import { listarUsuarios, obtenerUsuarioPorId } from '../services/usuarioService'
 
 function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
     establecimiento: '',
     ...initialData
   })
+  const [usuarios, setUsuarios] = useState([])
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -22,6 +24,32 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
       return () => clearTimeout(timer)
     }
   }, [success])
+
+  useEffect(() => {
+    const cargarUsuarios = async () => {
+      try {
+        const token = localStorage.getItem('authToken')
+        const rut = localStorage.getItem('rut')
+        const response = await listarUsuarios(token, rut)
+        setUsuarios(response.data)
+      } catch (e) {
+        // No mostrar error aquí para no molestar al usuario
+      }
+    }
+    cargarUsuarios()
+  }, [])
+
+  const handleUsuarioSelect = async (e) => {
+    const id = e.target.value
+    if (!id) return
+    try {
+      const token = localStorage.getItem('authToken')
+      const response = await obtenerUsuarioPorId(id, token)
+      setFormData({ ...response.data })
+    } catch (e) {
+      setError('Error al cargar el usuario seleccionado')
+    }
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -63,6 +91,17 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
       {success && <Alert variant="success">{success}</Alert>}
 
       <Form onSubmit={handleSubmit}>
+        {modo === 'editar' && (
+          <Form.Group className="mb-3">
+            <Form.Label>Seleccionar usuario para editar</Form.Label>
+            <Form.Select onChange={handleUsuarioSelect} defaultValue="">
+              <option value="">-- Selecciona un usuario --</option>
+              {usuarios.map(u => (
+                <option key={u.id} value={u.id}>{u.nombres} {u.apellido_paterno} {u.apellido_materno} ({u.rut})</option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        )}
         <Row>
           <Col md={6}>
             <Form.Group className="mb-3">

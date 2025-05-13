@@ -32,7 +32,7 @@ function AppContent() {
             <Route path="/convenios/eliminar" element={<EliminarConvenioPage />} />
             {/* Usuarios */}
             <Route path="/usuarios/crear" element={<CrearUsuarioPage />} />
-            <Route path="/usuarios/editar/:id" element={<EditarUsuarioPage />} />
+            <Route path="/usuarios/editar/" element={<EditarUsuarioPage />} />
             {/* REM */}
             <Route path="/rem/subir" element={<SubirRemPage />} />
             {/* Establecimientos */}

@@ -3,6 +3,7 @@ import { Container } from 'react-bootstrap'
 import { useNavigate, useParams } from 'react-router-dom'
 import UsuarioForm from '../../components/UsuarioForm'
 import './EditarUsuarioPage.css'
+import { editarUsuario, obtenerUsuarioPorId } from '../../services/usuarioService'
 
 function EditarUsuarioPage() {
   const navigate = useNavigate()
@@ -15,16 +16,9 @@ function EditarUsuarioPage() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        // Simulación de carga de datos
-        const userData = {
-          nombres: 'Usuario de Prueba',
-          apellidoPaterno: 'Apellido',
-          apellidoMaterno: 'Materno',
-          rut: '12345678-9',
-          correo: 'usuario@ejemplo.com',
-          establecimiento: 'Establecimiento de Prueba'
-        }
-        setInitialData(userData)
+        const token = localStorage.getItem('authToken')
+        const response = await obtenerUsuarioPorId(id, token)
+        setInitialData(response.data)
       } catch (error) {
         setError('Error al cargar los datos del usuario')
       } finally {
@@ -37,14 +31,17 @@ function EditarUsuarioPage() {
 
   const handleSubmit = async (formData) => {
     try {
-      // Aquí irá la lógica para actualizar el usuario
-      console.log('Actualizando usuario:', formData)
+      const token = localStorage.getItem('authToken')
+      await editarUsuario(id, formData, token)
       setSuccess('Usuario actualizado exitosamente')
       setTimeout(() => {
         navigate('/usuarios')
       }, 2000)
     } catch (error) {
-      setError('Error al actualizar el usuario')
+      setError(
+        error.response?.data?.message ||
+        'Error al actualizar el usuario'
+      )
     }
   }
 

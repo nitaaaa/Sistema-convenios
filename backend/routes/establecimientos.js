@@ -6,6 +6,7 @@ const { subirExcel, getEstablecimientos, getEstablecimientosPorComuna } = requir
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+const { buscarUsuariosPorEstablecimiento } = require('../models/establecimientoModel');
 
 // Crear establecimiento
 router.post('/nuevo', verifyToken, async (req, res) => {
@@ -31,5 +32,17 @@ router.get('/', verifyToken, getEstablecimientos);
 
 // Obtener establecimientos por comunas_id
 router.get('/:comunas_id', verifyToken, getEstablecimientosPorComuna);
+
+// Obtener usuarios por establecimiento
+router.get('/usuarios/:idEstablecimiento', verifyToken, async (req, res) => {
+  const { idEstablecimiento } = req.params;
+  try {
+    const usuarios = await buscarUsuariosPorEstablecimiento(idEstablecimiento);
+    res.json(usuarios);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al buscar usuarios por establecimiento' });
+  }
+});
 
 module.exports = router; 

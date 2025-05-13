@@ -5,6 +5,7 @@ import axios from 'axios'
 import logoMicrosoft from '../assets/Logo-Microsoft.png'
 import './LoginPage.css'
 import { EXPIRATION_TIME } from '../../constans';
+import { buscarUsuarioPorCorreo } from '../services/usuarioService'
 
 function guardarSesion(token, userData) {
   localStorage.setItem('authToken', token);
@@ -25,11 +26,26 @@ function LoginPage() {
 
     if (token) {
       const decoded = jwtDecode(token)
-      guardarSesion(token, {
-        email: decoded.email,
-        nombre: decoded.nombre
-      });
-      navigate('/reportes')
+      const email = decoded.email
+      // Validar si el usuario existe en la BD
+      const validarUsuario = async () => {
+        try {
+          // Usamos el token recibido para autenticarnos en la consulta
+          const usuario = await buscarUsuarioPorCorreo(email, token)
+          guardarSesion(token, {
+            nombre: usuario.data.nombres,
+            apellidoPaterno: usuario.data.apellidoPaterno,
+            apellidoMaterno: usuario.data.apellidoMaterno,
+            rut: usuario.data.rut,
+            correo: usuario.data.correo,
+            //establecimiento: usuario.data.establecimiento, //De momento no se usa
+          });
+          navigate('/reportes')
+        } catch (err) {
+          setError('El usuario no pertenece a la organización')
+        }
+      }
+      validarUsuario()
     }
   }, [location, navigate])
 
