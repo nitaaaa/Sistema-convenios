@@ -47,4 +47,4 @@ const buscarEstablecimientosPorUsuario = async (rutUsuario) => {
   return rows;
 };
 
-module.exports = { crearUsuario, editarUsuario, obtenerUsuarioPorId, listarUsuarios, buscarUsuarioPorCorreo, buscarUsuariosPorEstablecimiento, buscarEstablecimientosPorUsuario };
+module.exports = { crearUsuario, editarUsuario, obtenerUsuarioPorId, listarUsuarios, buscarUsuarioPorCorreo, buscarEstablecimientosPorUsuario };

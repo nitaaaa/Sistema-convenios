@@ -15,8 +15,7 @@ function CrearConvenioPage() {
     fechaInicio: '',
     fechaFin: '',
     monto: '',
-    componentes: [],
-    cuotas: []
+    componentes: []
   }
 
   const handleSubmit = async (formData) => {

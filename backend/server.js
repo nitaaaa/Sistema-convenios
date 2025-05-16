@@ -8,6 +8,7 @@ const powerbiRoutes = require('./routes/powerbi')
 const usuarioRoutes = require('./routes/usuario')
 const establecimientoRoutes = require('./routes/establecimientos')
 const comunasRoutes = require('./routes/comunas')
+const convenioRoutes = require('./routes/convenio')
 
 
 
@@ -45,6 +46,7 @@ app.use('/api/powerbi', powerbiRoutes)
 app.use('/api/usuarios', usuarioRoutes)
 app.use('/api/establecimientos', establecimientoRoutes)
 app.use('/api/comunas', comunasRoutes)
+app.use('/api/convenios', convenioRoutes)
 
 // Leer certificados SSL
 const httpsOptions = {

@@ -66,6 +66,8 @@ function AppNavbar() {
 
             {/* Submenú Administrar */}
             <NavDropdown title="Administrar" id="administrar-dropdown">
+              <NavDropdown.Header>Comunas</NavDropdown.Header>
+              <NavDropdown.Item href="/comunas/agregarConvenio">Agregar convenio</NavDropdown.Item>
               <NavDropdown.Header>Establecimientos</NavDropdown.Header>
               <NavDropdown.Item href="/establecimientos/crear">Crear Establecimiento</NavDropdown.Item>
               <NavDropdown.Item href="/establecimientos/modificar">Modificar Establecimiento</NavDropdown.Item>

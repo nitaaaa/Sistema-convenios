@@ -7,16 +7,19 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [erroresIndicadores, setErroresIndicadores] = useState({})
-  const [erroresCuotas, setErroresCuotas] = useState({})
+
+  const indicadorVacio = {
+    nombre: '',
+    numerador: '',
+    denominador: '',
+    pesoFinal: '',
+    fuente: ''
+  }
 
   const [nuevoComponente, setNuevoComponente] = useState({
     nombre: '',
-    indicadores: []
-  })
-
-  const [nuevaCuota, setNuevaCuota] = useState({
-    fechaRendicion: '',
-    porcentajes: [{ valor: '', descuento: '' }]
+    indicadores: [],
+    nuevoIndicador: { ...indicadorVacio }
   })
 
   const handleSubmit = async (e) => {
@@ -49,19 +52,13 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
     setFormData(prev => ({
       ...prev,
       componentes: [...prev.componentes, { 
-        ...nuevoComponente,
-        nuevoIndicador: {
-          nombre: '',
-          numerador: '',
-          denominador: '',
-          pesoFinal: '',
-          fuente: ''
-        }
+        ...nuevoComponente
       }]
     }))
     setNuevoComponente({
       nombre: '',
-      indicadores: []
+      indicadores: [],
+      nuevoIndicador: { ...indicadorVacio }
     })
   }
 
@@ -127,83 +124,6 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
     })
   }
 
-  const handleAddCuota = () => {
-    if (nuevaCuota.fechaRendicion === '') {
-      setErroresCuotas(prev => ({
-        ...prev,
-        fecha: 'La fecha de rendición es requerida'
-      }))
-      return
-    }
-
-    const porcentajesInvalidos = nuevaCuota.porcentajes.some(p => 
-      p.valor === '' || p.descuento === '' || 
-      isNaN(parseFloat(p.valor)) || isNaN(parseFloat(p.descuento)) ||
-      parseFloat(p.valor) <= 0 || parseFloat(p.valor) > 100 ||
-      parseFloat(p.descuento) < 0 || parseFloat(p.descuento) > 100
-    )
-
-    if (porcentajesInvalidos) {
-      setErroresCuotas(prev => ({
-        ...prev,
-        porcentajes: 'Todos los porcentajes y descuentos deben ser valores válidos entre 0 y 100'
-      }))
-      return
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      cuotas: [...prev.cuotas, { ...nuevaCuota }]
-    }))
-    setNuevaCuota({
-      fechaRendicion: '',
-      porcentajes: [{ valor: '', descuento: '' }]
-    })
-    setErroresCuotas({})
-  }
-
-  const handleAddPorcentaje = () => {
-    setNuevaCuota(prev => ({
-      ...prev,
-      porcentajes: [...prev.porcentajes, { valor: '', descuento: '' }]
-    }))
-  }
-
-  const handlePorcentajeChange = (index, field, value) => {
-    setNuevaCuota(prev => {
-      const nuevosPorcentajes = [...prev.porcentajes]
-      nuevosPorcentajes[index][field] = value
-      return {
-        ...prev,
-        porcentajes: nuevosPorcentajes
-      }
-    })
-  }
-
-  const handleCuotaChange = (index, field, value) => {
-    setFormData(prev => {
-      const nuevosCuotas = [...prev.cuotas]
-      nuevosCuotas[index][field] = value
-      return {
-        ...prev,
-        cuotas: nuevosCuotas
-      }
-    })
-  }
-
-  const handlePorcentajeCuotaChange = (index, i, field, value) => {
-    setFormData(prev => {
-      const nuevosCuotas = [...prev.cuotas]
-      const nuevosPorcentajes = [...nuevosCuotas[index].porcentajes]
-      nuevosPorcentajes[i][field] = value
-      nuevosCuotas[index].porcentajes = nuevosPorcentajes
-      return {
-        ...prev,
-        cuotas: nuevosCuotas
-      }
-    })
-  }
-
   const handleComponenteChange = (componenteIndex, field, value) => {
     setFormData(prev => {
       const nuevosComponentes = [...prev.componentes]
@@ -238,22 +158,20 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
             type="text"
             name="nombre"
             value={formData.nombre}
-            onChange={handleChange}
+            onChange={e => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
             required
           />
         </Form.Group>
-
         <Form.Group className="mb-3">
           <Form.Label>Descripción</Form.Label>
           <Form.Control
             as="textarea"
             name="descripcion"
             value={formData.descripcion}
-            onChange={handleChange}
+            onChange={e => setFormData(prev => ({ ...prev, descripcion: e.target.value }))}
             rows={3}
           />
         </Form.Group>
-
         <Row>
           <Col md={6}>
             <Form.Group className="mb-3">
@@ -262,7 +180,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                 type="date"
                 name="fechaInicio"
                 value={formData.fechaInicio}
-                onChange={handleChange}
+                onChange={e => setFormData(prev => ({ ...prev, fechaInicio: e.target.value }))}
                 required
               />
             </Form.Group>
@@ -274,7 +192,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                 type="date"
                 name="fechaFin"
                 value={formData.fechaFin}
-                onChange={handleChange}
+                onChange={e => setFormData(prev => ({ ...prev, fechaFin: e.target.value }))}
                 required
               />
             </Form.Group>
@@ -287,7 +205,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
               <Form.Select
                 name="establecimiento"
                 value={formData.establecimiento}
-                onChange={handleChange}
+                onChange={e => setFormData(prev => ({ ...prev, establecimiento: e.target.value }))}
                 required
               >
                 <option value="">Seleccione un establecimiento</option>
@@ -302,7 +220,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                 type="number"
                 name="monto"
                 value={formData.monto}
-                onChange={handleChange}
+                onChange={e => setFormData(prev => ({ ...prev, monto: e.target.value }))}
                 required
                 min="0"
                 step="0.01"
@@ -310,118 +228,6 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
             </Form.Group>
           </Col>
         </Row>
-      </div>
-
-      <div className="seccion-container mb-3 p-3">
-        <h4>Cuotas</h4>
-        <Row className="mb-3">
-          <Col md={4}>
-            <Form.Label>Fecha de Rendición</Form.Label>
-            <Form.Control
-              type="date"
-              value={nuevaCuota.fechaRendicion}
-              onChange={(e) => setNuevaCuota({ ...nuevaCuota, fechaRendicion: e.target.value })}
-            />
-            {erroresCuotas.fecha && (
-              <small className="text-danger">{erroresCuotas.fecha}</small>
-            )}
-          </Col>
-        </Row>
-
-        <div className="mb-3">
-          <h6>Porcentajes de Cumplimiento</h6>
-          {nuevaCuota.porcentajes.map((porcentaje, index) => (
-            <Row key={index} className="mb-2">
-              <Col md={5}>
-                <Form.Control
-                  type="number"
-                  placeholder="Porcentaje de cumplimiento"
-                  value={porcentaje.valor}
-                  onChange={(e) => handlePorcentajeChange(index, 'valor', e.target.value)}
-                  min="0"
-                  max="100"
-                  step="0.01"
-                />
-              </Col>
-              <Col md={5}>
-                <Form.Control
-                  type="number"
-                  placeholder="Descuento asociado (%)"
-                  value={porcentaje.descuento}
-                  onChange={(e) => handlePorcentajeChange(index, 'descuento', e.target.value)}
-                  min="0"
-                  max="100"
-                  step="0.01"
-                />
-              </Col>
-              {index === nuevaCuota.porcentajes.length - 1 && (
-                <Col xs="auto">
-                  <Button variant="outline-primary" onClick={handleAddPorcentaje}>
-                    +
-                  </Button>
-                </Col>
-              )}
-            </Row>
-          ))}
-          {erroresCuotas.porcentajes && (
-            <small className="text-danger">{erroresCuotas.porcentajes}</small>
-          )}
-        </div>
-
-        <Button variant="primary" onClick={handleAddCuota}>
-          Agregar Cuota
-        </Button>
-
-        {formData.cuotas.map((cuota, index) => (
-          <div key={index} className="mb-3 p-3 border rounded border-black">
-            <h5>Cuota {index + 1}</h5>
-            <Form.Group className="mb-2">
-              <Form.Label>Fecha de Rendición</Form.Label>
-              {modo === "modificar" ? (
-                <Form.Control
-                  type="date"
-                  value={cuota.fechaRendicion}
-                  onChange={e => handleCuotaChange(index, 'fechaRendicion', e.target.value)}
-                />
-              ) : (
-                <p><strong>{cuota.fechaRendicion}</strong></p>
-              )}
-            </Form.Group>
-            <h6>Porcentajes de Cumplimiento:</h6>
-            {cuota.porcentajes.map((p, i) => (
-              <div key={i} className="mb-2">
-                {modo === "modificar" ? (
-                  <Row>
-                    <Col md={5}>
-                      <Form.Control
-                        type="number"
-                        value={p.valor}
-                        onChange={e => handlePorcentajeCuotaChange(index, i, 'valor', e.target.value)}
-                        min="0"
-                        max="100"
-                        step="0.01"
-                      />
-                    </Col>
-                    <Col md={5}>
-                      <Form.Control
-                        type="number"
-                        value={p.descuento}
-                        onChange={e => handlePorcentajeCuotaChange(index, i, 'descuento', e.target.value)}
-                        min="0"
-                        max="100"
-                        step="0.01"
-                      />
-                    </Col>
-                  </Row>
-                ) : (
-                  <p>
-                    Cumplimiento: {p.valor}% - Descuento: {p.descuento}%
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
       </div>
 
       <div className="seccion-container border rounded mb-4 p-3">
@@ -515,6 +321,60 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                   </Row>
                 </div>
               ))}
+              {/* Formulario para agregar un nuevo indicador */}
+              <Row className="align-items-end mb-2">
+                <Col md={3}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Nombre"
+                    value={componente.nuevoIndicador?.nombre || ''}
+                    onChange={e => handleIndicadorChange(componenteIndex, 'nombre', e.target.value)}
+                  />
+                </Col>
+                <Col md={2}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Numerador"
+                    value={componente.nuevoIndicador?.numerador || ''}
+                    onChange={e => handleIndicadorChange(componenteIndex, 'numerador', e.target.value)}
+                  />
+                </Col>
+                <Col md={2}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Denominador"
+                    value={componente.nuevoIndicador?.denominador || ''}
+                    onChange={e => handleIndicadorChange(componenteIndex, 'denominador', e.target.value)}
+                  />
+                </Col>
+                <Col md={2}>
+                  <Form.Control
+                    type="number"
+                    placeholder="Peso Final"
+                    value={componente.nuevoIndicador?.pesoFinal || ''}
+                    onChange={e => handleIndicadorChange(componenteIndex, 'pesoFinal', e.target.value)}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                  />
+                </Col>
+                <Col md={2}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Fuente"
+                    value={componente.nuevoIndicador?.fuente || ''}
+                    onChange={e => handleIndicadorChange(componenteIndex, 'fuente', e.target.value)}
+                  />
+                </Col>
+                <Col xs="auto">
+                  <Button variant="success" onClick={() => handleAddIndicador(componenteIndex)}>
+                    Agregar Indicador
+                  </Button>
+                </Col>
+              </Row>
+              {erroresIndicadores[componenteIndex] && (
+                <div className="text-danger mb-2">{erroresIndicadores[componenteIndex]}</div>
+              )}
             </div>
           </div>
         ))}
