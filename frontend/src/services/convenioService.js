@@ -3,8 +3,13 @@ import axios from 'axios'
 const API_URL = import.meta.env.VITE_API_URL
 
 export const crearConvenio = async (convenioData) => {
+  const token = localStorage.getItem('authToken')
   try {
-    const response = await axios.post(`${API_URL}/convenios`, convenioData)
+    const response = await axios.post(`${API_URL}/convenios`, convenioData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
     return response.data
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Error al crear el convenio')
