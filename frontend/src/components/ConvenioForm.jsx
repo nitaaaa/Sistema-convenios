@@ -4,14 +4,11 @@ import './ConvenioForm.css'
 
 function ConvenioForm({ initialData, onSubmit, modo}) {
   const [formData, setFormData] = useState(initialData)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [erroresIndicadores, setErroresIndicadores] = useState({})
 
   const indicadorVacio = {
     nombre: '',
-    numeradores: [],
-    denominador: '',
+    formulas: [],
     pesoFinal: '',
     fuente: ''
   }
@@ -24,14 +21,10 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
-
     try {
       await onSubmit(formData)
-      setSuccess(modo === "crear" ? "Convenio creado exitosamente" : "Convenio modificado exitosamente")
     } catch (error) {
-      setError('Error al ' + (modo === "crear" ? "crear" : "modificar") + ' el convenio')
+      // No setError aquí
     }
   }
 
@@ -45,7 +38,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
 
   const handleAddComponente = () => {
     if (nuevoComponente.nombre.trim() === '') {
-      setError('El nombre del componente no puede estar vacío')
+      // No setError aquí
       return
     }
 
@@ -63,7 +56,6 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
   }
 
   const handleAddIndicador = (componenteIndex) => {
-    console.log('handleAddIndicador iniciando con:', componenteIndex)
     const componente = formData.componentes[componenteIndex]
     const indicador = componente.nuevoIndicador
 
@@ -73,8 +65,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
     }))
 
     if (indicador.nombre.trim() === '' || 
-        !indicador.numeradores?.length ||
-        indicador.denominador.trim() === '' || 
+        !indicador.formulas?.length ||
         indicador.pesoFinal.trim() === '' || 
         indicador.fuente.trim() === '') {
       setErroresIndicadores(prev => ({
@@ -84,10 +75,10 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
       return
     }
 
-    if (indicador.numeradores.some(n => !n.titulo.trim() || !n.valor.trim())) {
+    if (indicador.formulas.some(f => !f.titulo.trim() || !f.numerador.trim() || !f.denominador.trim())) {
       setErroresIndicadores(prev => ({
         ...prev,
-        [componenteIndex]: 'Todos los numeradores deben tener título y valor'
+        [componenteIndex]: 'Todos los elementos de la fórmula deben tener título, numerador y denominador'
       }))
       return
     }
@@ -101,9 +92,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
       return
     }
 
-    setFormData(prev => {
-      console.log('Estado previo en handleAddIndicador:', JSON.stringify(prev.componentes[componenteIndex], null, 2))
-      
+    setFormData(prev => {      
       const nuevosComponentes = [...prev.componentes]
       const nuevoIndicador = { ...indicador }
       nuevosComponentes[componenteIndex] = {
@@ -111,10 +100,6 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
         indicadores: [...nuevosComponentes[componenteIndex].indicadores, nuevoIndicador],
         nuevoIndicador: { ...indicadorVacio }
       }
-
-      console.log('Nuevo estado después de agregar indicador:', 
-        JSON.stringify(nuevosComponentes[componenteIndex], null, 2))
-
       return {
         ...prev,
         componentes: nuevosComponentes
@@ -157,20 +142,21 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
     })
   }
 
-  const handleAgregarNumerador = (componenteIndex, indicadorIndex) => {
+  const handleAgregarFormula = (componenteIndex, indicadorIndex) => {
     setFormData(prev => {
       const nuevosComponentes = [...prev.componentes]
-      const numerador = {
+      const formula = {
         titulo: '',
-        valor: ''
+        numerador: '',
+        denominador: ''
       }
       if (indicadorIndex !== undefined) {
         // Para indicador existente
         const nuevosIndicadores = [...nuevosComponentes[componenteIndex].indicadores]
         const indicador = { ...nuevosIndicadores[indicadorIndex] }
-        const numeradores = indicador.numeradores ? [...indicador.numeradores] : []
-        numeradores.push(numerador)
-        indicador.numeradores = numeradores
+        const formulas = indicador.formulas ? [...indicador.formulas] : []
+        formulas.push(formula)
+        indicador.formulas = formulas
         nuevosIndicadores[indicadorIndex] = indicador
         nuevosComponentes[componenteIndex] = {
           ...nuevosComponentes[componenteIndex],
@@ -179,9 +165,9 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
       } else {
         // Para nuevo indicador
         const nuevoIndicador = { ...nuevosComponentes[componenteIndex].nuevoIndicador }
-        const numeradores = nuevoIndicador.numeradores ? [...nuevoIndicador.numeradores] : []
-        numeradores.push(numerador)
-        nuevoIndicador.numeradores = numeradores
+        const formulas = nuevoIndicador.formulas ? [...nuevoIndicador.formulas] : []
+        formulas.push(formula)
+        nuevoIndicador.formulas = formulas
         nuevosComponentes[componenteIndex] = {
           ...nuevosComponentes[componenteIndex],
           nuevoIndicador
@@ -194,21 +180,13 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
     })
   }
 
-  const handleNumeradorChange = (componenteIndex, indicadorIndex, numeradorIndex, field, value) => {
-    console.log('handleNumeradorChange llamado con:', {
-      componenteIndex,
-      indicadorIndex,
-      numeradorIndex,
-      field,
-      value
-    })
-    
+  const handleFormulaChange = (componenteIndex, indicadorIndex, formulaIndex, field, value) => {
     setFormData(prev => {
       const nuevosComponentes = [...prev.componentes]
       if (indicadorIndex !== undefined) {
-        nuevosComponentes[componenteIndex].indicadores[indicadorIndex].numeradores[numeradorIndex][field] = value
+        nuevosComponentes[componenteIndex].indicadores[indicadorIndex].formulas[formulaIndex][field] = value
       } else {
-        nuevosComponentes[componenteIndex].nuevoIndicador.numeradores[numeradorIndex][field] = value
+        nuevosComponentes[componenteIndex].nuevoIndicador.formulas[formulaIndex][field] = value
       }
       return {
         ...prev,
@@ -217,13 +195,13 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
     })
   }
 
-  const handleRemoveNumerador = (componenteIndex, indicadorIndex, numeradorIndex) => {
+  const handleRemoveFormula = (componenteIndex, indicadorIndex, formulaIndex) => {
     setFormData(prev => {
       const nuevosComponentes = [...prev.componentes]
       if (indicadorIndex !== undefined) {
-        nuevosComponentes[componenteIndex].indicadores[indicadorIndex].numeradores.splice(numeradorIndex, 1)
+        nuevosComponentes[componenteIndex].indicadores[indicadorIndex].formulas.splice(formulaIndex, 1)
       } else {
-        nuevosComponentes[componenteIndex].nuevoIndicador.numeradores.splice(numeradorIndex, 1)
+        nuevosComponentes[componenteIndex].nuevoIndicador.formulas.splice(formulaIndex, 1)
       }
       return {
         ...prev,
@@ -351,18 +329,8 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                         <Col md={2}>
                           <Form.Control
                             type="text"
-                            value={indicador.denominador}
-                            onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'denominador', e.target.value)}
-                          />
-                        </Col>
-                        <Col md={2}>
-                          <Form.Control
-                            type="number"
                             value={indicador.pesoFinal}
                             onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'pesoFinal', e.target.value)}
-                            min="0"
-                            max="100"
-                            step="0.01"
                           />
                         </Col>
                         <Col md={2}>
@@ -375,41 +343,49 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                         <Col md={1}>
                           <Button 
                             variant="primary"
-                            onClick={() => handleAgregarNumerador(componenteIndex, indicadorIndex)}
+                            onClick={() => handleAgregarFormula(componenteIndex, indicadorIndex)}
                           >
-                            Agregar Numerador
+                            Agregar Fórmula
                           </Button>
                         </Col>
                       </>
                     ) : (
                       <>
                         <Col md={3}><strong>Nombre:</strong> {indicador.nombre}</Col>
-                        <Col md={2}><strong>Denominador:</strong> {indicador.denominador}</Col>
                         <Col md={2}><strong>Peso Final:</strong> {indicador.pesoFinal}%</Col>
                         <Col md={2}><strong>Fuente:</strong> {indicador.fuente}</Col>
                       </>
                     )}
                   </Row>
-                  {indicador.numeradores && indicador.numeradores.length > 0 && (
+                  {indicador.formulas && indicador.formulas.length > 0 && (
                     <div className="mt-2 ms-4">
-                      <h6>Numeradores:</h6>
-                      {indicador.numeradores.map((numerador, numeradorIndex) => (
-                        <Row key={numeradorIndex} className="mb-2 align-items-center">
-                          <Col md={4}>
+                      <h6>Fórmula de cálculo:</h6>
+                      {indicador.formulas.map((formula, formulaIndex) => (
+                        <Row key={formulaIndex} className="mb-2 align-items-center">
+                          <Col md={3}>
                             <Form.Control
                               type="text"
-                              placeholder="Título del numerador"
-                              value={numerador.titulo}
-                              onChange={e => handleNumeradorChange(componenteIndex, indicadorIndex, numeradorIndex, 'titulo', e.target.value)}
+                              placeholder="Título"
+                              value={formula.titulo}
+                              onChange={e => handleFormulaChange(componenteIndex, indicadorIndex, formulaIndex, 'titulo', e.target.value)}
                               disabled={modo !== "modificar"}
                             />
                           </Col>
-                          <Col md={4}>
+                          <Col md={3}>
                             <Form.Control
                               type="text"
-                              placeholder="Valor del numerador"
-                              value={numerador.valor}
-                              onChange={e => handleNumeradorChange(componenteIndex, indicadorIndex, numeradorIndex, 'valor', e.target.value)}
+                              placeholder="Numerador"
+                              value={formula.numerador}
+                              onChange={e => handleFormulaChange(componenteIndex, indicadorIndex, formulaIndex, 'numerador', e.target.value)}
+                              disabled={modo !== "modificar"}
+                            />
+                          </Col>
+                          <Col md={3}>
+                            <Form.Control
+                              type="text"
+                              placeholder="Denominador"
+                              value={formula.denominador}
+                              onChange={e => handleFormulaChange(componenteIndex, indicadorIndex, formulaIndex, 'denominador', e.target.value)}
                               disabled={modo !== "modificar"}
                             />
                           </Col>
@@ -418,7 +394,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                               <Button
                                 variant="danger"
                                 size="sm"
-                                onClick={() => handleRemoveNumerador(componenteIndex, indicadorIndex, numeradorIndex)}
+                                onClick={() => handleRemoveFormula(componenteIndex, indicadorIndex, formulaIndex)}
                               >
                                 Eliminar
                               </Button>
@@ -437,14 +413,6 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                     placeholder="Nombre"
                     value={componente.nuevoIndicador?.nombre || ''}
                     onChange={e => handleIndicadorChange(componenteIndex, 'nombre', e.target.value)}
-                  />
-                </Col>
-                <Col md={2}>
-                  <Form.Control
-                    type="text"
-                    placeholder="Denominador"
-                    value={componente.nuevoIndicador?.denominador || ''}
-                    onChange={e => handleIndicadorChange(componenteIndex, 'denominador', e.target.value)}
                   />
                 </Col>
                 <Col md={2}>
@@ -469,38 +437,46 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                 <Col md={1}>
                   <Button 
                     variant="primary"
-                    onClick={() => handleAgregarNumerador(componenteIndex)}
+                    onClick={() => handleAgregarFormula(componenteIndex)}
                   >
-                    Agregar Numerador
+                    Agregar Fórmula
                   </Button>
                 </Col>
               </Row>
-              {componente.nuevoIndicador?.numeradores && componente.nuevoIndicador.numeradores.length > 0 && (
+              {componente.nuevoIndicador?.formulas && componente.nuevoIndicador.formulas.length > 0 && (
                 <div className="mt-2 ms-4">
-                  <h6>Numeradores:</h6>
-                  {componente.nuevoIndicador.numeradores.map((numerador, numeradorIndex) => (
-                    <Row key={numeradorIndex} className="mb-2 align-items-center">
-                      <Col md={4}>
+                  <h6>Fórmula de cálculo:</h6>
+                  {componente.nuevoIndicador.formulas.map((formula, formulaIndex) => (
+                    <Row key={formulaIndex} className="mb-2 align-items-center">
+                      <Col md={3}>
                         <Form.Control
                           type="text"
-                          placeholder="Título del numerador"
-                          value={numerador.titulo}
-                          onChange={e => handleNumeradorChange(componenteIndex, undefined, numeradorIndex, 'titulo', e.target.value)}
+                          placeholder="Título"
+                          value={formula.titulo}
+                          onChange={e => handleFormulaChange(componenteIndex, undefined, formulaIndex, 'titulo', e.target.value)}
                         />
                       </Col>
-                      <Col md={4}>
+                      <Col md={3}>
                         <Form.Control
                           type="text"
-                          placeholder="Valor del numerador"
-                          value={numerador.valor}
-                          onChange={e => handleNumeradorChange(componenteIndex, undefined, numeradorIndex, 'valor', e.target.value)}
+                          placeholder="Numerador"
+                          value={formula.numerador}
+                          onChange={e => handleFormulaChange(componenteIndex, undefined, formulaIndex, 'numerador', e.target.value)}
+                        />
+                      </Col>
+                      <Col md={3}>
+                        <Form.Control
+                          type="text"
+                          placeholder="Denominador"
+                          value={formula.denominador}
+                          onChange={e => handleFormulaChange(componenteIndex, undefined, formulaIndex, 'denominador', e.target.value)}
                         />
                       </Col>
                       <Col md={1}>
                         <Button
                           variant="danger"
                           size="sm"
-                          onClick={() => handleRemoveNumerador(componenteIndex, undefined, numeradorIndex)}
+                          onClick={() => handleRemoveFormula(componenteIndex, undefined, formulaIndex)}
                         >
                           Eliminar
                         </Button>
@@ -522,9 +498,6 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
         ))}
       </div>
 
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && <Alert variant="success">{success}</Alert>}
-      
       <Button variant="primary" type="submit">
         {modo === "crear" ? "Crear Convenio" : "Guardar Cambios"}
       </Button>

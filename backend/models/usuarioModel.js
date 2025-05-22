@@ -47,4 +47,24 @@ const buscarEstablecimientosPorUsuario = async (rutUsuario) => {
   return rows;
 };
 
-module.exports = { crearUsuario, editarUsuario, obtenerUsuarioPorId, listarUsuarios, buscarUsuarioPorCorreo, buscarEstablecimientosPorUsuario };
+const buscarComunaDelUsuario = async (rutUsuario) => {
+  const [rows] = await db.execute(
+    `SELECT c.* FROM comunas c
+     INNER JOIN establecimientos e ON e.Comunas_id = c.id
+     INNER JOIN establecimientos_usuarios eu ON eu.Establecimientos_id = e.id
+     WHERE eu.Usuarios_rut = ?
+     LIMIT 1`,
+    [rutUsuario]
+  );
+  return rows[0];
+};
+
+module.exports = {
+  crearUsuario,
+  editarUsuario,
+  obtenerUsuarioPorId,
+  listarUsuarios,
+  buscarUsuarioPorCorreo,
+  buscarEstablecimientosPorUsuario,
+  buscarComunaDelUsuario
+};

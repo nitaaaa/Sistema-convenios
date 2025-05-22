@@ -21,12 +21,10 @@ function CrearConvenioPage() {
   const handleSubmit = async (formData) => {
     try {
       await crearConvenio(formData)
-      setSuccess('Convenio creado exitosamente')
-      setTimeout(() => {
-        navigate('/convenios')
-      }, 2000)
+      window.alert('Convenio creado exitosamente')
+      navigate('/convenios')
     } catch (error) {
-      setError('Error al crear el convenio: ' + error.message)
+      window.alert('Error al crear el convenio: ' + (error?.response?.data?.message || error.message))
     }
   }
 
@@ -34,9 +32,6 @@ function CrearConvenioPage() {
     <div className="container mt-4">
       <h2 className="mb-4">Crear Nuevo Convenio</h2>
       
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && <Alert variant="success">{success}</Alert>}
-
       <ConvenioForm 
         initialData={initialData}
         onSubmit={handleSubmit}

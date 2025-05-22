@@ -5,7 +5,7 @@ import axios from 'axios'
 import logoMicrosoft from '../assets/Logo-Microsoft.png'
 import './LoginPage.css'
 import { EXPIRATION_TIME } from '../../constans';
-import { buscarUsuarioPorCorreo } from '../services/usuarioService'
+import { buscarUsuarioPorCorreo, buscarEstablecimientosPorUsuario } from '../services/usuarioService'
 
 function guardarSesion(token, userData) {
   localStorage.setItem('authToken', token);
@@ -32,13 +32,15 @@ function LoginPage() {
         try {
           // Usamos el token recibido para autenticarnos en la consulta
           const usuario = await buscarUsuarioPorCorreo(email, token)
+          const establecimientos = await buscarEstablecimientosPorUsuario(usuario.data.rut, token)
+          const nombreEstablecimientos = establecimientos.data.map(est => est.nombre);
           guardarSesion(token, {
             nombre: usuario.data.nombres,
             apellidoPaterno: usuario.data.apellidoPaterno,
             apellidoMaterno: usuario.data.apellidoMaterno,
             rut: usuario.data.rut,
             correo: usuario.data.correo,
-            //establecimiento: usuario.data.establecimiento, //De momento no se usa
+            establecimientos: nombreEstablecimientos,
           });
           navigate('/reportes')
         } catch (err) {
@@ -46,6 +48,9 @@ function LoginPage() {
         }
       }
       validarUsuario()
+      
+      
+
     }
   }, [location, navigate])
 

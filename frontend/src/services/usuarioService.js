@@ -42,3 +42,20 @@ export const buscarUsuarioPorCorreo = async (correo, token) => {
     },
   })
 } 
+
+export const comunaDelUsuario = async (rut) => {
+  const token = localStorage.getItem('authToken')
+  return axios.get(`/api/usuarios/comuna/${encodeURIComponent(rut)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export const buscarEstablecimientosPorUsuario = async (rut, token) => {
+  return axios.get(`/api/usuarios/establecimientos/${encodeURIComponent(rut)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
