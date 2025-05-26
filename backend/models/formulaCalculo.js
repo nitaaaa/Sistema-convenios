@@ -8,4 +8,12 @@ async function crearFormulaCalculo({ titulo, numerador, denominador, indicadorId
   return result;
 }
 
-module.exports = { crearFormulaCalculo }; 
+async function getFormulasPorIndicador(indicadorId) {
+  const [rows] = await db.execute(
+    'SELECT * FROM formula_calculo WHERE Indicadores_id = ?',
+    [indicadorId]
+  );
+  return rows;
+}
+
+module.exports = { crearFormulaCalculo, getFormulasPorIndicador }; 

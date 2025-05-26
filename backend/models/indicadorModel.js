@@ -8,4 +8,12 @@ async function crearIndicador({ nombre, pesoFinal, fuente, componenteId }, conne
   return result;
 }
 
-module.exports = { crearIndicador }; 
+async function getIndicadoresPorComponente(componenteId) {
+  const [rows] = await db.execute(
+    'SELECT * FROM indicadores WHERE Componentes_id = ?',
+    [componenteId]
+  );
+  return rows;
+}
+
+module.exports = { crearIndicador, getIndicadoresPorComponente }; 

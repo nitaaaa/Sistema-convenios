@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Form, Button, Alert, Row, Col } from 'react-bootstrap'
+import { Form, Button, Alert, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import './ConvenioForm.css'
 
 function ConvenioForm({ initialData, onSubmit, modo}) {
   const [formData, setFormData] = useState(initialData)
   const [erroresIndicadores, setErroresIndicadores] = useState({})
+  const [indicadorEditando, setIndicadorEditando] = useState({ componente: null, indicador: null });
 
   const indicadorVacio = {
     nombre: '',
@@ -317,13 +318,14 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
               {componente.indicadores.map((indicador, indicadorIndex) => (
                 <div key={indicadorIndex} className="mb-2 p-2 border rounded">
                   <Row>
-                    {modo === "modificar" ? (
+                    {(modo === "modificar" || (indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex)) ? (
                       <>
                         <Col md={3}>
                           <Form.Control
                             type="text"
                             value={indicador.nombre}
                             onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'nombre', e.target.value)}
+                            disabled={!(indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex)}
                           />
                         </Col>
                         <Col md={2}>
@@ -331,6 +333,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                             type="text"
                             value={indicador.pesoFinal}
                             onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'pesoFinal', e.target.value)}
+                            disabled={!(indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex)}
                           />
                         </Col>
                         <Col md={2}>
@@ -338,15 +341,24 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                             type="text"
                             value={indicador.fuente}
                             onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'fuente', e.target.value)}
+                            disabled={!(indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex)}
                           />
                         </Col>
                         <Col md={1}>
                           <Button 
                             variant="primary"
                             onClick={() => handleAgregarFormula(componenteIndex, indicadorIndex)}
+                            disabled={!(indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex)}
                           >
                             Agregar Fórmula
                           </Button>
+                        </Col>
+                        <Col md={2}>
+                          {indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex ? (
+                            <Button variant="success" onClick={() => setIndicadorEditando({ componente: null, indicador: null })}>Guardar</Button>
+                          ) : (
+                            <Button variant="warning" onClick={() => setIndicadorEditando({ componente: componenteIndex, indicador: indicadorIndex })}>Editar</Button>
+                          )}
                         </Col>
                       </>
                     ) : (
@@ -354,6 +366,9 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                         <Col md={3}><strong>Nombre:</strong> {indicador.nombre}</Col>
                         <Col md={2}><strong>Peso Final:</strong> {indicador.pesoFinal}%</Col>
                         <Col md={2}><strong>Fuente:</strong> {indicador.fuente}</Col>
+                        <Col md={2}>
+                          <Button variant="warning" onClick={() => setIndicadorEditando({ componente: componenteIndex, indicador: indicadorIndex })}>Editar</Button>
+                        </Col>
                       </>
                     )}
                   </Row>
@@ -368,17 +383,25 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                               placeholder="Título"
                               value={formula.titulo}
                               onChange={e => handleFormulaChange(componenteIndex, indicadorIndex, formulaIndex, 'titulo', e.target.value)}
-                              disabled={modo !== "modificar"}
+                              disabled={!(indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex)}
                             />
                           </Col>
                           <Col md={3}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
                             <Form.Control
                               type="text"
                               placeholder="Numerador"
                               value={formula.numerador}
                               onChange={e => handleFormulaChange(componenteIndex, indicadorIndex, formulaIndex, 'numerador', e.target.value)}
-                              disabled={modo !== "modificar"}
-                            />
+                                disabled={!(indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex)}
+                              />
+                              <OverlayTrigger
+                                placement="top"
+                                overlay={<Tooltip id={`tooltip-numerador-${componenteIndex}-${indicadorIndex}-${formulaIndex}`}>Puedes ingresar múltiples casillas separadas por coma, por ejemplo: A1,B2,C3</Tooltip>}
+                              >
+                                <span style={{ marginLeft: 6, cursor: 'pointer', color: '#0d6efd', fontSize: 18 }} title="Ayuda">&#9432;</span>
+                              </OverlayTrigger>
+                            </div>
                           </Col>
                           <Col md={3}>
                             <Form.Control
@@ -386,10 +409,10 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                               placeholder="Denominador"
                               value={formula.denominador}
                               onChange={e => handleFormulaChange(componenteIndex, indicadorIndex, formulaIndex, 'denominador', e.target.value)}
-                              disabled={modo !== "modificar"}
+                              disabled={!(indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex)}
                             />
                           </Col>
-                          {modo === "modificar" && (
+                          {indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex && (
                             <Col md={1}>
                               <Button
                                 variant="danger"
@@ -457,12 +480,20 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                         />
                       </Col>
                       <Col md={3}>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
                         <Form.Control
                           type="text"
                           placeholder="Numerador"
                           value={formula.numerador}
                           onChange={e => handleFormulaChange(componenteIndex, undefined, formulaIndex, 'numerador', e.target.value)}
                         />
+                          <OverlayTrigger
+                            placement="top"
+                            overlay={<Tooltip id={`tooltip-numerador-${componenteIndex}-${formulaIndex}`}>Puedes ingresar múltiples casillas separadas por coma, por ejemplo: A1,B2,C3</Tooltip>}
+                          >
+                            <span style={{ marginLeft: 6, cursor: 'pointer', color: '#0d6efd', fontSize: 18 }} title="Ayuda">&#9432;</span>
+                          </OverlayTrigger>
+                        </div>
                       </Col>
                       <Col md={3}>
                         <Form.Control

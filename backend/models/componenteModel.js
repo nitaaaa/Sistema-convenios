@@ -8,4 +8,12 @@ async function crearComponente({ nombre, convenioId }, connection = db) {
   return result;
 }
 
-module.exports = { crearComponente };
+async function getComponentesPorConvenio(convenioId) {
+  const [rows] = await db.execute(
+    'SELECT * FROM componentes WHERE Convenios_id = ?',
+    [convenioId]
+  );
+  return rows;
+}
+
+module.exports = { crearComponente, getComponentesPorConvenio };

@@ -8,4 +8,20 @@ async function crearConvenio({ nombre, descripcion, fechaInicio, fechaFin, monto
   return result;
 }
 
-module.exports = { crearConvenio }; 
+async function getConveniosPorAnio(anio) {
+  const [rows] = await db.execute(
+    'SELECT * FROM convenios WHERE YEAR(inicio) = ?',
+    [anio]
+  );
+  return rows;
+}
+
+async function getConvenioPorId(id) {
+  const [rows] = await db.execute(
+    'SELECT * FROM convenios WHERE id = ?',
+    [id]
+  );
+  return rows[0];
+}
+
+module.exports = { crearConvenio, getConveniosPorAnio, getConvenioPorId }; 

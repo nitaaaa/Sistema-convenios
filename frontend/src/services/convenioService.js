@@ -50,4 +50,60 @@ export const eliminarConvenio = async (id) => {
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Error al eliminar el convenio')
   }
+}
+
+export const obtenerConveniosPorAnio = async (anio) => {
+  const token = localStorage.getItem('authToken');
+  try {
+    const response = await axios.get(`${API_URL}/convenios/anio/${anio}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al obtener los convenios del año');
+  }
+}
+
+export const obtenerComponentesPorConvenio = async (convenioId) => {
+  const token = localStorage.getItem('authToken');
+  try {
+    const response = await axios.get(`${API_URL}/convenios/${convenioId}/componentes`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al obtener los componentes del convenio');
+  }
+}
+
+export const obtenerIndicadoresPorComponente = async (componenteId) => {
+  const token = localStorage.getItem('authToken');
+  try {
+    const response = await axios.get(`${API_URL}/convenios/componentes/${componenteId}/indicadores`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al obtener los indicadores del componente');
+  }
+}
+
+export const obtenerFormulasPorIndicador = async (indicadorId) => {
+  const token = localStorage.getItem('authToken');
+  try {
+    const response = await axios.get(`${API_URL}/convenios/indicadores/${indicadorId}/formulas`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al obtener las fórmulas del indicador');
+  }
 } 

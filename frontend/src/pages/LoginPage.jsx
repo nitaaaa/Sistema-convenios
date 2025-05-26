@@ -34,6 +34,7 @@ function LoginPage() {
           const usuario = await buscarUsuarioPorCorreo(email, token)
           const establecimientos = await buscarEstablecimientosPorUsuario(usuario.data.rut, token)
           const nombreEstablecimientos = establecimientos.data.map(est => est.nombre);
+          console.log('Establecimientos login: ', nombreEstablecimientos);
           guardarSesion(token, {
             nombre: usuario.data.nombres,
             apellidoPaterno: usuario.data.apellidoPaterno,
