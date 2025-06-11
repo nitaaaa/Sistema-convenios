@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/auth');
 const { crearEstablecimiento } = require('../models/establecimientoModel');
-const { subirExcel, getEstablecimientos, getEstablecimientosPorComuna } = require('../controllers/establecimientosController');
+const { subirExcel, getEstablecimientos, getEstablecimientosPorComuna, getEstablecimientosDependientes } = require('../controllers/establecimientosController');
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -25,7 +25,6 @@ router.post('/nuevo', verifyToken, async (req, res) => {
   }
 });
 
-router.post('/subir-excel', verifyToken, upload.array('file'), subirExcel);
 
 // Obtener todos los establecimientos
 router.get('/', verifyToken, getEstablecimientos);
@@ -44,5 +43,11 @@ router.get('/usuarios/:idEstablecimiento', verifyToken, async (req, res) => {
     res.status(500).json({ message: 'Error al buscar usuarios por establecimiento' });
   }
 });
+
+// Obtener establecimientos dependientes de un establecimiento
+router.get('/dependientes/:id', verifyToken, getEstablecimientosDependientes);
+
+// Obtener datos de un establecimiento por su id
+router.get('/info/:id', verifyToken, require('../controllers/establecimientosController').getEstablecimientoPorId);
 
 module.exports = router; 

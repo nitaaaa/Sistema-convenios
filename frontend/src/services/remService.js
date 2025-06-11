@@ -3,11 +3,11 @@ import axios from 'axios';
 export const subirRemArchivos = async (archivos) => {
   const formData = new FormData();
   archivos.forEach((archivo) => {
-    formData.append('file', archivo);
+    formData.append('files', archivo);
   });
   const token = localStorage.getItem('authToken');
   try {
-    const response = await axios.post(`/api/establecimientos/subir-excel`, formData, {
+    const response = await axios.post(`/api/rem/subir`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         Authorization: `Bearer ${token}`,
@@ -21,4 +21,4 @@ export const subirRemArchivos = async (archivos) => {
     }
     throw error;
   }
-}; 
+};  

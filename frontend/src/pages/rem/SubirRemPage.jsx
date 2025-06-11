@@ -18,8 +18,11 @@ function SubirRemPage() {
       'application/vnd.ms-excel', // .xls
       'application/vnd.ms-excel.sheet.macroEnabled.12' // .xlsm
     ];
-    return validTypes.includes(file.type);
-  };
+    const validExtensions = ['.xlsx', '.xls', '.xlsm'];
+    const fileName = file.name ? file.name.toLowerCase() : '';
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+    return validTypes.includes(file.type) || hasValidExtension;
+  }; 
 
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
@@ -77,11 +80,13 @@ function SubirRemPage() {
         setFiles([]);
         setError('');
       } else if (resp.status === 207) {
-        setSuccess('Algunos archivos no fueron guardados');
+        setSuccess('');
         setDetalles(resp);
         setFiles([]);
-        setError('');
+        setError('Algunos archivos no fueron guardados');
       } else {
+        console.log('resp.status ', resp.status);
+        console.log(resp)
         setError('Error al subir los archivos: ' + (resp.mensaje || resp.message || 'Error desconocido'));
         setDetalles(null);
       }

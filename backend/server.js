@@ -9,6 +9,7 @@ const usuarioRoutes = require('./routes/usuario')
 const establecimientoRoutes = require('./routes/establecimientos')
 const comunasRoutes = require('./routes/comunas')
 const convenioRoutes = require('./routes/convenio')
+const remRoutes = require('./routes/rem')
 
 
 
@@ -47,6 +48,7 @@ app.use('/api/usuarios', usuarioRoutes)
 app.use('/api/establecimientos', establecimientoRoutes)
 app.use('/api/comunas', comunasRoutes)
 app.use('/api/convenios', convenioRoutes)
+app.use('/api/rem', remRoutes)
 
 // Leer certificados SSL
 const httpsOptions = {

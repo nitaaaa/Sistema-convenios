@@ -120,6 +120,9 @@ async function createConvenio(req, res) {
       }
     }
     await connection.commit();
+
+    //aqui cuando se ingresen los datos se deberá revisar si existen archivos que no se le han aplicado las formulas
+
     res.status(201).json({ message: 'Convenio, componentes, indicadores y fórmulas de cálculo creados exitosamente', convenioId });
   } catch (error) {
     await connection.rollback();
@@ -185,78 +188,75 @@ async function calcularResultadosPorMes(req, res) {
     return res.status(400).json({ message: 'Faltan parámetros requeridos (anio, establecimiento, convenioId)' });
   }
   try {
-    // 1. Obtener convenio, componentes, indicadores y fórmulas
+    // 1. Obtener convenio y sus fechas
     const convenio = await require('../models/convenioModel').getConvenioPorId(convenioId);
     if (!convenio) {
       return res.status(404).json({ message: 'No se encontró el convenio' });
     }
-    const fechaInicio = new Date(convenio.inicio);
-    const fechaFin = new Date(convenio.termino);
-    const mesInicio = fechaInicio.getMonth() + 1;
-    const mesFin = fechaFin.getMonth() + 1;
-    const mesesNombre = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
-    const mesesValidos = [];
-    for (let m = mesInicio; m <= mesFin; m++) {
-      mesesValidos.push(mesesNombre[m - 1]);
-    }
-    const componentes = await getComponentesPorConvenio(convenioId);
-    const componentesConIndicadores = await Promise.all(componentes.map(async (comp) => {
-      const indicadores = await getIndicadoresPorComponente(comp.id);
-      const indicadoresConFormulas = await Promise.all(indicadores.map(async (ind) => {
-        const formulas = await getFormulasPorIndicador(ind.id);
-        return { ...ind, formulas };
-      }));
-      return { ...comp, indicadores: indicadoresConFormulas };
-    }));
-    
-    // 2. Buscar carpetas de meses válidos
-    const basePath = path.join(__dirname, '..', 'REMs', 'PUERTO MONTT', establecimiento, anio);
-    if (!fs.existsSync(basePath)) {
-      return res.status(404).json({ message: 'No existe la ruta del año para el establecimiento' });
-    }
-    const meses = fs.readdirSync(basePath).filter(mes => fs.statSync(path.join(basePath, mes)).isDirectory() && mesesValidos.includes(mes));
 
-    // Ordenar los meses según el orden natural
-    meses.sort((a, b) => mesesNombre.indexOf(a) - mesesNombre.indexOf(b));
-    const resultados = {};
-    for (const mes of meses) {
-      const mesPath = path.join(basePath, mes);
-      const archivos = fs.readdirSync(mesPath).filter(f => f.endsWith('.xlsx') || f.endsWith('.xlsm'));
-      if (archivos.length === 0) continue;
-      const archivoExcel = path.join(mesPath, archivos[0]);
-      const workbook = XLSX.readFile(archivoExcel);
-      resultados[mes] = [];
-      // 3. Calcular resultados para cada fórmula
-      for (const comp of componentesConIndicadores) {
-        for (const ind of comp.indicadores) {
-          // Seleccionar la hoja según el campo fuente del indicador
-          const sheetName = ind.fuente;
-          const sheet = workbook.Sheets[sheetName];
-          if (!sheet) continue;
-          for (const formula of ind.formulas) {
-            // Numerador: puede ser varias celdas separadas por coma
-            const celdas = formula.numerador.split(',').map(c => c.trim());
-            let sumaNumerador = 0;
-            for (const celda of celdas) {
-              const valor = sheet[celda]?.v;
-              sumaNumerador += Number(valor) || 0;
-            }
-            const denominador = Number(formula.denominador);
-            let resultado = denominador === 0 ? 0 : sumaNumerador / denominador;
-            if (resultado > 1) resultado = 1;
-            resultados[mes].push({
-              componente: comp.nombre,
-              indicador: ind.nombre,
-              formula: formula.titulo,
-              numerador: sumaNumerador,
-              denominador,
-              resultado
-            });
-          }
-        }
-      }
+    // 2. Obtener todas las fórmulas asociadas al convenio
+    const formulaIds = await require('../models/formulaCalculoModel').getFormulaIdsByConvenio(convenioId);
+    if (!formulaIds || formulaIds.length === 0) {
+      return res.status(404).json({ message: 'No se encontraron fórmulas asociadas al convenio' });
     }
-    res.json(resultados);
+
+    // 3. Obtener los resultados de las fórmulas desde la tabla resultados_calculo
+    const placeholders = formulaIds.map(() => '?').join(',');
+    const [resultados] = await db.execute(`
+      SELECT 
+        rc.formula_calculo_id,
+        rc.resultado,
+        r.ruta,
+        r.mes,
+        r.ano,
+        fc.numerador,
+        fc.denominador,
+        i.nombre as indicador_nombre,
+        i.fuente,
+        c.nombre as componente_nombre,
+        i.peso_final
+      FROM resultados_calculo rc
+      INNER JOIN rem r ON rc.rem_id = r.id
+      INNER JOIN formula_calculo fc ON rc.formula_calculo_id = fc.id
+      INNER JOIN indicadores i ON fc.Indicadores_id = i.id
+      INNER JOIN componentes c ON i.Componentes_id = c.id
+      WHERE rc.formula_calculo_id IN (${placeholders})
+      AND r.ano = ?
+      AND SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(r.ruta, '\\\\', '/'), '/', -4), '/', 1) = ?
+      ORDER BY r.mes
+    `, [...formulaIds, anio, establecimiento]);
+
+    // 4. Organizar los resultados por mes
+    const resultadosPorMes = {};
+    const mesesNombre = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+
+    for (const resultado of resultados) {
+      const mes = mesesNombre[parseInt(resultado.mes) - 1];
+      if (!resultadosPorMes[mes]) {
+        resultadosPorMes[mes] = [];
+      }
+      resultadosPorMes[mes].push({
+        componente: resultado.componente_nombre,
+        indicador: resultado.indicador_nombre,
+        formula_id: resultado.formula_calculo_id,
+        numerador: resultado.numerador,
+        denominador: resultado.denominador,
+        resultado: resultado.resultado,
+        peso_final: resultado.peso_final
+      });
+    }
+
+    // 5. Ordenar los meses según el orden natural
+    const mesesOrdenados = Object.keys(resultadosPorMes).sort((a, b) => 
+      mesesNombre.indexOf(a) - mesesNombre.indexOf(b)
+    );
+
+    const resultadosFinales = {};
+    for (const mes of mesesOrdenados) {
+      resultadosFinales[mes] = resultadosPorMes[mes];
+    }
+
+    res.json(resultadosFinales);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error al calcular los resultados de las fórmulas' });

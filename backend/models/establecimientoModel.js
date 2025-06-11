@@ -33,4 +33,14 @@ async function buscarUsuariosPorEstablecimiento(establecimientoId) {
   return rows;
 }
 
-module.exports = { crearEstablecimiento, listarEstablecimientos, listarEstablecimientosPorComuna, buscarEstablecimientoPorNombreYComuna, buscarUsuariosPorEstablecimiento }; 
+async function listarEstablecimientosDependientes(establecimientos_id) {
+  const [rows] = await db.execute('SELECT * FROM establecimientos WHERE establecimiento_id = ?', [establecimientos_id]);
+  return rows;
+}
+
+async function obtenerEstablecimientoPorId(id) {
+  const [rows] = await db.execute('SELECT * FROM establecimientos WHERE id = ?', [id]);
+  return rows[0];
+}
+
+module.exports = { crearEstablecimiento, listarEstablecimientos, listarEstablecimientosPorComuna, buscarEstablecimientoPorNombreYComuna, buscarUsuariosPorEstablecimiento, listarEstablecimientosDependientes, obtenerEstablecimientoPorId }; 

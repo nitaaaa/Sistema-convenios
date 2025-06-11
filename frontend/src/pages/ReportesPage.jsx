@@ -1,35 +1,36 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import './ReportesPage.css'
-import * as echarts from 'echarts';
 import { obtenerConveniosPorAnio } from '../services/convenioService';
 import axios from 'axios';
 import { Spinner } from 'react-bootstrap';
+import { obtenerEstablecimientoPorId } from '../services/establecimientoService';
+import { obtenerResultadosPorMes } from '../services/convenioService';
+import GraficoTotales from '../components/GraficoTotales';
+import GraficoEstablecimiento from '../components/GraficoEstablecimiento';
+import { ordenMeses } from '../../constans';
 
 function ReportesPage() {
-  // Estados para los filtros
+  // Estados para los filtros y datos de la página
   const [anio, setAnio] = useState('');
   const [convenio, setConvenio] = useState('');
   const [establecimientoSeleccionado, setEstablecimientoSeleccionado] = useState('');
   const [convenios, setConvenios] = useState([]);
   const [establecimientos, setEstablecimientos] = useState([]);
-  const chartRef = useRef(null);
-  const chartInstance = useRef(null);
-  const [resultadosPorMes, setResultadosPorMes] = useState(null);
+  const [resultadosPorEstablecimiento, setResultadosPorEstablecimiento] = useState(null);
   const [loadingResultados, setLoadingResultados] = useState(false);
 
-  // Generar años desde 2024 hasta el año actual
+  // Generar array de años desde 2024 hasta el año actual para el selector
   const currentYear = new Date().getFullYear();
   const years = [];
   for (let y = 2024; y <= currentYear; y++) {
     years.push(y);
   }
 
-  // Consultar convenios según el año seleccionado
+  // Consultar convenios disponibles según el año seleccionado
   useEffect(() => {
     if (anio) {
       obtenerConveniosPorAnio(anio)
         .then(data => {
-          console.log('Convenios: ', data);
           setConvenios(data);
           setConvenio(''); // Limpiar selección anterior
         })
@@ -41,109 +42,144 @@ function ReportesPage() {
   }, [anio]);
 
   // Cargar establecimientos desde localStorage al montar el componente
+  // Obtiene los establecimientos asociados al usuario actual
   useEffect(() => {
     const userDataStr = localStorage.getItem('userData');
-    let establecimientosArr = [];
+    const establecimientosArr = [];
+    const fetchEstablecimientos = async (ids) => {
+      for (const id of ids) {
+        try {
+          const data = await obtenerEstablecimientoPorId(id);
+          establecimientosArr.push({ id: data.id, nombre: data.nombre });
+        } catch {}
+      }
+      setEstablecimientos(establecimientosArr);
+    };
     if (userDataStr) {
       try {
         const userData = JSON.parse(userDataStr);
-        establecimientosArr = Array.isArray(userData.establecimientos) ? userData.establecimientos : [];
+        const ids = Array.isArray(userData.establecimientos) ? userData.establecimientos : [];
+        if (ids.length > 0) {
+          fetchEstablecimientos(ids);
+        } else {
+          setEstablecimientos([]);
+        }
       } catch {
-        establecimientosArr = [];
+        setEstablecimientos([]);
       }
+    } else {
+      setEstablecimientos([]);
     }
-    setEstablecimientos(establecimientosArr);
   }, []);
 
   // Consultar resultados por mes al seleccionar año, convenio y establecimiento
+  // Devuelve un objeto con el establecimiento seleccionado y sus dependientes
+  // Para cada establecimiento, devuelve un objeto con los meses y dentro de los meses devuelve los datos por componente, indicador y formula
   useEffect(() => {
     const fetchResultados = async () => {
       if (!anio || !convenio || !establecimientoSeleccionado) {
-        setResultadosPorMes(null);
+        setResultadosPorEstablecimiento(null);
         return;
       }
       setLoadingResultados(true);
+      console.time('consulta-resultados'); // INICIO MEDICIÓN
       try {
         const token = localStorage.getItem('authToken');
-        const response = await axios.get(`/api/convenios/reportes/calculo`, {
-          params: { anio, establecimiento: establecimientoSeleccionado, convenioId: convenio },
+        // 1. Buscar dependientes del establecimiento seleccionado
+        const dependientesResp = await axios.get(`/api/establecimientos/dependientes/${establecimientoSeleccionado}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setResultadosPorMes(response.data);
-        //console.log('Resultados: ', response.data);
+        // Armar lista de establecimientos a consultar (el principal + dependientes)
+        const dependientes = dependientesResp.data;
+        const todosEstablecimientos = [
+          { 
+            id: establecimientoSeleccionado, 
+            nombre: establecimientos.find(e => String(e.id) === String(establecimientoSeleccionado))?.nombre || establecimientoSeleccionado 
+          },
+          ...dependientes.map(dep => ({ id: dep.id, nombre: dep.nombre }))
+        ];
+        // 2. Consultar resultados por cada establecimiento
+        const resultados = {};
+        for (const est of todosEstablecimientos) {
+          try {
+            const resp = await obtenerResultadosPorMes({ anio, establecimiento: est.nombre, convenioId: convenio});
+            resultados[est.nombre] = resp;
+          } catch {
+            resultados[est.nombre] = null;
+          }
+        }
+        setResultadosPorEstablecimiento(resultados);
       } catch (err) {
-        setResultadosPorMes(null);
+        setResultadosPorEstablecimiento(null);
       } finally {
         setLoadingResultados(false);
+        console.timeEnd('consulta-resultados'); // FIN MEDICIÓN
       }
     };
     fetchResultados();
-  }, [anio, convenio, establecimientoSeleccionado]);
+  }, [anio, convenio, establecimientoSeleccionado, establecimientos]);
 
-  useEffect(() => {
-    if (!resultadosPorMes) return;
-    // Preparar datos para el gráfico
-    let option = {
-      title: { text: 'Resultados por mes' },
-      tooltip: {},
-      xAxis: {
-        data: [],
-        axisLabel: {
-          rotate: 90
-        }
-      },
-      yAxis: {},
-      series: []
-    };
-    // Usar los meses tal como llegan del backend
-    const meses = Object.keys(resultadosPorMes);
-    option.xAxis.data = meses;
-    // Obtener todos los nombres de indicadores únicos presentes en los resultados
+  // Calcular datos para los gráficos
+  // Procesa los resultados y genera los datos necesarios para renderizar los gráficos
+  const calcularDatosGraficos = () => {
+    if (!resultadosPorEstablecimiento) return null;
+
+    // Obtener todos los meses presentes en todos los establecimientos
+    const mesesSet = new Set();
+    Object.values(resultadosPorEstablecimiento).forEach(res => {
+      if (res) Object.keys(res).forEach(mes => mesesSet.add(mes));
+    });
+    const meses = Array.from(mesesSet).sort(
+      (a, b) => ordenMeses.indexOf(a.toUpperCase()) - ordenMeses.indexOf(b.toUpperCase())
+    );
+
+    // Obtener todos los indicadores presentes en todos los establecimientos
     const indicadoresSet = new Set();
-    meses.forEach(mes => {
-      resultadosPorMes[mes].forEach(f => indicadoresSet.add(f.indicador));
+    Object.values(resultadosPorEstablecimiento).forEach(res => {
+      if (res) Object.values(res).forEach(arr => arr.forEach(f => indicadoresSet.add(f.indicador)));
     });
     const indicadores = Array.from(indicadoresSet);
-    // Para cada indicador, armar una serie con los resultados promediados y acumulados por mes
-    option.series = indicadores.map(indicador => {
-      let acumulado = 0;
-      const data = meses.map(mes => {
-        // Filtrar las fórmulas de ese indicador en ese mes
-        const formulas = resultadosPorMes[mes].filter(f => f.indicador === indicador);
-        // Sumar los resultados y dividir por la cantidad de fórmulas (promedio)
-        let resultadoMes = 0;
-        if (formulas.length > 0) {
-          resultadoMes = formulas.reduce((acc, f) => acc + (typeof f.resultado === 'number' ? f.resultado : 0), 0) / formulas.length;
+
+    // Calcular totales por indicador
+    // Para cada indicador, suma los resultados ponderados de todos los establecimientos
+    const totalesPorIndicador = {};
+    let sumaTotal = 0;
+    indicadores.forEach(indicador => {
+      let total = 0;
+      Object.values(resultadosPorEstablecimiento).forEach(res => {
+        if (res) {
+          Object.values(res).forEach(arr => {
+            const formulas = arr.filter(f => f.indicador === indicador);
+            
+            if (formulas.length > 0) {
+              const promedio = formulas.reduce((acc, f) => acc + (typeof f.resultado === 'number' ? f.resultado : 0), 0) / formulas.length;
+              const peso = formulas[0].peso_final || 0;
+              total += peso * (promedio);
+            }
+          });
         }
-        acumulado += resultadoMes;
-        return acumulado;
       });
-      return {
-        name: indicador,
-        type: 'bar',
-        data
-      };
+      totalesPorIndicador[indicador] = Number(total.toFixed(2));
+      sumaTotal += totalesPorIndicador[indicador];
     });
-    if (chartRef.current) {
-      if (!chartInstance.current) {
-        chartInstance.current = echarts.init(chartRef.current);
-      }
-      chartInstance.current.setOption(option);
-    }
-    // Cleanup
-    return () => {
-      if (chartInstance.current) {
-        chartInstance.current.dispose();
-        chartInstance.current = null;
-      }
+    sumaTotal = Number(sumaTotal.toFixed(2));
+
+    return {
+      meses,
+      indicadores,
+      totalesPorIndicador,
+      sumaTotal
     };
-  }, [resultadosPorMes]);
+  };
+
+  const datosGraficos = calcularDatosGraficos();
 
   return (
     <div className="report-container" style={{ display: 'flex', height: '100vh', padding: 0 }}>
-      {/* Filtros a la izquierda */}
+      {/* Panel de filtros a la izquierda */}
       <div style={{ width: '320px', background: '#f8f9fa', padding: '32px 24px', borderRight: '1px solid #ddd' }}>
         <h4>Filtros</h4>
+        {/* Selector de año */}
         <div className="mb-3">
           <label className="form-label">Año</label>
           <select className="form-select" value={anio} onChange={e => setAnio(e.target.value)} disabled={loadingResultados}>
@@ -153,6 +189,7 @@ function ReportesPage() {
             ))}
           </select>
         </div>
+        {/* Selector de convenio */}
         <div className="mb-3">
           <label className="form-label">Convenio</label>
           <select className="form-select" value={convenio} onChange={e => setConvenio(e.target.value)} disabled={!anio || convenios.length === 0 || loadingResultados}>
@@ -162,6 +199,7 @@ function ReportesPage() {
             ))}
           </select>
         </div>
+        {/* Selector de establecimiento */}
         <div className="mb-3">
           <label className="form-label">Establecimiento</label>
           <select
@@ -171,24 +209,45 @@ function ReportesPage() {
             disabled={loadingResultados}
           >
             <option value="">Seleccione establecimiento</option>
-            {establecimientos.map((est, idx) => (
-              <option key={idx} value={est}>{est}</option>
+            {establecimientos.map((est) => (
+              <option key={est.id} value={est.id}>{est.nombre}</option>
             ))}
           </select>
         </div>
+        {/* Indicador de carga */}
         {loadingResultados && (
-        <div className="mt-3" style={{ display: 'flex', alignItems: 'center' }}>
-          <Spinner animation="border" role="status" size="sm">
-            <span className="visually-hidden">Cargando...</span>
-          </Spinner>
-          <span className="ms-2">Cargando resultados...</span>
-        </div>
+          <div className="mt-3" style={{ display: 'flex', alignItems: 'center' }}>
+            <Spinner animation="border" role="status" size="sm">
+              <span className="visually-hidden">Cargando...</span>
+            </Spinner>
+            <span className="ms-2">Cargando resultados...</span>
+          </div>
         )}
       </div>
-      
-      {/* Gráfico a la derecha */}
-      <div style={{ flex: 1, padding: '32px', background: '#f5f5f5' }}>
-        <div id="main" ref={chartRef} style={{ height: '100%', minHeight: 400 }} />
+
+      {/* Panel de gráficos a la derecha */}
+      <div style={{ flex: 1, padding: '32px', background: '#f5f5f5', overflowY: 'auto', maxHeight: '100vh', marginTop: '56px' }}>
+        {/* Gráficos individuales por establecimiento */}
+        {datosGraficos && Object.keys(resultadosPorEstablecimiento || {})
+          .filter(nombreEst => nombreEst && resultadosPorEstablecimiento[nombreEst])
+          .map(nombreEst => (
+            <GraficoEstablecimiento
+              key={nombreEst}
+              nombreEst={nombreEst}
+              resultados={resultadosPorEstablecimiento[nombreEst]}
+              indicadores={datosGraficos.indicadores}
+              meses={datosGraficos.meses}
+            />
+        ))}
+
+        {/* Gráfico de totales - solo visible cuando hay datos */}
+        {datosGraficos && (
+          <GraficoTotales
+            indicadores={datosGraficos.indicadores}
+            totalesPorIndicador={datosGraficos.totalesPorIndicador}
+            sumaTotal={datosGraficos.sumaTotal}
+          />
+        )}
       </div>
     </div>
   )

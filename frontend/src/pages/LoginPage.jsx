@@ -33,15 +33,14 @@ function LoginPage() {
           // Usamos el token recibido para autenticarnos en la consulta
           const usuario = await buscarUsuarioPorCorreo(email, token)
           const establecimientos = await buscarEstablecimientosPorUsuario(usuario.data.rut, token)
-          const nombreEstablecimientos = establecimientos.data.map(est => est.nombre);
-          console.log('Establecimientos login: ', nombreEstablecimientos);
+          const idEstablecimientos = establecimientos.data.map(est => est.id);
           guardarSesion(token, {
             nombre: usuario.data.nombres,
             apellidoPaterno: usuario.data.apellidoPaterno,
             apellidoMaterno: usuario.data.apellidoMaterno,
             rut: usuario.data.rut,
             correo: usuario.data.correo,
-            establecimientos: nombreEstablecimientos,
+            establecimientos: idEstablecimientos,
           });
           navigate('/reportes')
         } catch (err) {

@@ -106,4 +106,18 @@ export const obtenerFormulasPorIndicador = async (indicadorId) => {
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Error al obtener las fórmulas del indicador');
   }
+}
+
+export const obtenerResultadosPorMes = async ({ anio, establecimiento, convenioId}) => {
+  try {
+    const token = localStorage.getItem('authToken');
+    const response = await axios.get(`${API_URL}/convenios/reportes/calculo`, {
+      params: { anio, establecimiento, convenioId },
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.log('Error: ', error);
+    throw new Error(error.response?.data?.message || 'Error al obtener los resultados por mes');
+  }
 } 
