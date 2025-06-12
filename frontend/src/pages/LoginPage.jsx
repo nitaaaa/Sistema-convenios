@@ -68,7 +68,7 @@ function LoginPage() {
 
   return (
     <div className="container-fluid">
-      <h2>Módulo gestion de convenios</h2>
+      <h2>Módulo gestión de convenios</h2>
       <div className="container border rounded login-container">
         <h2 className="login-title">Iniciar sesión</h2>
         <form onSubmit={handleLogin} className="login-form">

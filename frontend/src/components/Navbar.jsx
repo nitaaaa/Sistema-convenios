@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navbar, Nav, NavDropdown, Container } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import './Navbar.css';
+import DESAMBlanco from '../assets/DESAM-blanco.png';
 
 function AppNavbar() {
   const navigate = useNavigate();
@@ -47,6 +48,11 @@ function AppNavbar() {
   return (
     <Navbar bg="dark" variant="dark" expand="lg" fixed="top">
       <Container>
+        <img
+          src={DESAMBlanco}
+          alt="DESAM"
+          style={{ height: '0px', marginRight: '16px' }}
+        />
         <Navbar.Brand href="/reportes">Modulo Convenios</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">

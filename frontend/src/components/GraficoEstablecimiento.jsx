@@ -44,14 +44,9 @@ const GraficoEstablecimiento = ({ nombreEst, resultados, indicadores, meses }) =
           const promedio = formulas.reduce((acc, f) => acc + (typeof f.resultado === 'number' ? f.resultado : 0), 0) / formulas.length;
           const peso = formulas[0].peso_final || 0;
           let resultadoMes = 0;
-          console.log('Mes: ', mes);
-          console.log('Indicador: ', indicador);
-          console.log('Promedio: ', promedio);
-          console.log('Peso: ', peso);
-          if(promedio != 0){
-            resultadoMes = peso * promedio ;
-          }
-          console.log('Resultado Mes: ', resultadoMes);
+          
+          resultadoMes = peso * promedio ;
+          
           acumulado += resultadoMes;
           return Number(acumulado.toFixed(2));
         }

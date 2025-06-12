@@ -29,7 +29,7 @@ function CrearConvenioPage() {
   }
 
   return (
-    <div className="container mt-4">
+    <div>
       <h2 className="mb-4">Crear Nuevo Convenio</h2>
       
       <ConvenioForm 

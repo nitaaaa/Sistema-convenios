@@ -183,6 +183,7 @@ exports.subirExcel = async (req, res) => {
               } else {
                 resultado = sumaNumerador / formula.denominador;
                 
+                
               }
 
               // Guardar el resultado en la base de datos

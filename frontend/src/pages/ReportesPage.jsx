@@ -7,6 +7,8 @@ import { obtenerEstablecimientoPorId } from '../services/establecimientoService'
 import { obtenerResultadosPorMes } from '../services/convenioService';
 import GraficoTotales from '../components/GraficoTotales';
 import GraficoEstablecimiento from '../components/GraficoEstablecimiento';
+import GraficoDesam from '../components/GraficoDesam';
+import TablaPrestaciones from '../components/TablaPrestaciones';
 import { ordenMeses } from '../../constans';
 
 function ReportesPage() {
@@ -85,19 +87,30 @@ function ReportesPage() {
       console.time('consulta-resultados'); // INICIO MEDICIÓN
       try {
         const token = localStorage.getItem('authToken');
-        // 1. Buscar dependientes del establecimiento seleccionado
-        const dependientesResp = await axios.get(`/api/establecimientos/dependientes/${establecimientoSeleccionado}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        // Armar lista de establecimientos a consultar (el principal + dependientes)
-        const dependientes = dependientesResp.data;
-        const todosEstablecimientos = [
-          { 
-            id: establecimientoSeleccionado, 
-            nombre: establecimientos.find(e => String(e.id) === String(establecimientoSeleccionado))?.nombre || establecimientoSeleccionado 
-          },
-          ...dependientes.map(dep => ({ id: dep.id, nombre: dep.nombre }))
-        ];
+        let todosEstablecimientos = [];
+
+        if (establecimientoSeleccionado === 'DESAM') {
+          // Si es DESAM, usar todos los establecimientos disponibles
+          todosEstablecimientos = establecimientos.map(est => ({
+            id: est.id,
+            nombre: est.nombre
+          }));
+        } else {
+          // 1. Buscar dependientes del establecimiento seleccionado
+          const dependientesResp = await axios.get(`/api/establecimientos/dependientes/${establecimientoSeleccionado}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          // Armar lista de establecimientos a consultar (el principal + dependientes)
+          const dependientes = dependientesResp.data;
+          todosEstablecimientos = [
+            { 
+              id: establecimientoSeleccionado, 
+              nombre: establecimientos.find(e => String(e.id) === String(establecimientoSeleccionado))?.nombre || establecimientoSeleccionado 
+            },
+            ...dependientes.map(dep => ({ id: dep.id, nombre: dep.nombre }))
+          ];
+        }
+
         // 2. Consultar resultados por cada establecimiento
         const resultados = {};
         for (const est of todosEstablecimientos) {
@@ -152,17 +165,22 @@ function ReportesPage() {
             const formulas = arr.filter(f => f.indicador === indicador);
             
             if (formulas.length > 0) {
-              const promedio = formulas.reduce((acc, f) => acc + (typeof f.resultado === 'number' ? f.resultado : 0), 0) / formulas.length;
+              const promedio = formulas.reduce((acc, f) => acc + (f.resultado || 0), 0) / formulas.length;
               const peso = formulas[0].peso_final || 0;
-              total += peso * (promedio);
+              const calculo = peso * promedio; // Convertir a decimal
+              total = Math.max(total, calculo);
+              console.log('total: ', total);
+              console.log('es un numero? ', typeof total === 'number');
             }
           });
         }
       });
-      totalesPorIndicador[indicador] = Number(total.toFixed(2));
+      // Convertimos a número después de redondear a 2 decimales
+      totalesPorIndicador[indicador] = Number(Math.round(total * 100) / 100);
       sumaTotal += totalesPorIndicador[indicador];
     });
-    sumaTotal = Number(sumaTotal.toFixed(2));
+    // Redondeamos la suma total a 2 decimales
+    sumaTotal = Number(Math.round(sumaTotal * 100) / 100);
 
     return {
       meses,
@@ -209,6 +227,7 @@ function ReportesPage() {
             disabled={loadingResultados}
           >
             <option value="">Seleccione establecimiento</option>
+            <option value="DESAM">DESAM (Todos los Establecimientos)</option>
             {establecimientos.map((est) => (
               <option key={est.id} value={est.id}>{est.nombre}</option>
             ))}
@@ -227,26 +246,46 @@ function ReportesPage() {
 
       {/* Panel de gráficos a la derecha */}
       <div style={{ flex: 1, padding: '32px', background: '#f5f5f5', overflowY: 'auto', maxHeight: '100vh', marginTop: '56px' }}>
-        {/* Gráficos individuales por establecimiento */}
-        {datosGraficos && Object.keys(resultadosPorEstablecimiento || {})
-          .filter(nombreEst => nombreEst && resultadosPorEstablecimiento[nombreEst])
-          .map(nombreEst => (
-            <GraficoEstablecimiento
-              key={nombreEst}
-              nombreEst={nombreEst}
-              resultados={resultadosPorEstablecimiento[nombreEst]}
+        {/* Gráfico DESAM o gráficos individuales por establecimiento */}
+        {datosGraficos && (
+          establecimientoSeleccionado === 'DESAM' ? (
+            <GraficoDesam
+              resultados={resultadosPorEstablecimiento}
               indicadores={datosGraficos.indicadores}
               meses={datosGraficos.meses}
             />
-        ))}
+          ) : (
+            Object.keys(resultadosPorEstablecimiento || {})
+              .filter(nombreEst => nombreEst && resultadosPorEstablecimiento[nombreEst])
+              .map(nombreEst => (
+                <GraficoEstablecimiento
+                  key={nombreEst}
+                  nombreEst={nombreEst}
+                  resultados={resultadosPorEstablecimiento[nombreEst]}
+                  indicadores={datosGraficos.indicadores}
+                  meses={datosGraficos.meses}
+                />
+            ))
+          )
+        )}
 
-        {/* Gráfico de totales - solo visible cuando hay datos */}
+        {/* Gráfico de totales y tabla de prestaciones - solo visible cuando hay datos */}
         {datosGraficos && (
-          <GraficoTotales
-            indicadores={datosGraficos.indicadores}
-            totalesPorIndicador={datosGraficos.totalesPorIndicador}
-            sumaTotal={datosGraficos.sumaTotal}
-          />
+          <div style={{ display: 'flex', gap: '32px' }}>
+            <div style={{ flex: 1 }}>
+              <GraficoTotales
+                indicadores={datosGraficos.indicadores}
+                totalesPorIndicador={datosGraficos.totalesPorIndicador}
+                sumaTotal={datosGraficos.sumaTotal}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <TablaPrestaciones
+                resultados={resultadosPorEstablecimiento}
+                indicadores={datosGraficos.indicadores}
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>
