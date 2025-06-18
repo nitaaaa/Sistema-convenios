@@ -206,6 +206,7 @@ async function calcularResultadosPorMes(req, res) {
       SELECT 
         rc.formula_calculo_id,
         rc.resultado,
+        rc.valor_celda,
         r.ruta,
         r.mes,
         r.ano,
@@ -242,6 +243,7 @@ async function calcularResultadosPorMes(req, res) {
         formula_id: resultado.formula_calculo_id,
         titulo: resultado.titulo,
         numerador: resultado.numerador,
+        valor_celda: resultado.valor_celda,
         denominador: resultado.denominador,
         resultado: resultado.resultado,
         peso_final: resultado.peso_final
@@ -265,4 +267,31 @@ async function calcularResultadosPorMes(req, res) {
   }
 }
 
-module.exports = { createConvenio, getConveniosPorAnio, componentesPorConvenio, indicadoresPorComponente, formulasPorIndicador, calcularResultadosPorMes }; 
+// Obtener fechas de validez de un convenio
+async function getFechasValidez(req, res) {
+  const { convenioId } = req.params;
+  try {
+    const convenio = await require('../models/convenioModel').getConvenioPorId(convenioId);
+    if (!convenio) {
+      return res.status(404).json({ message: 'No se encontró el convenio' });
+    }
+
+    res.json({
+      fechaInicio: convenio.inicio,
+      fechaFin: convenio.termino
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al obtener las fechas de validez del convenio' });
+  }
+}
+
+module.exports = { 
+  createConvenio, 
+  getConveniosPorAnio, 
+  componentesPorConvenio, 
+  indicadoresPorComponente, 
+  formulasPorIndicador, 
+  calcularResultadosPorMes,
+  getFechasValidez 
+}; 

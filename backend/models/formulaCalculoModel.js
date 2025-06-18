@@ -46,10 +46,10 @@ async function getFormulaById(formulaId) {
   return formulas[0];
 }
 
-async function guardarResultadoCalculo(remId, formulaId, resultado) {
+async function guardarResultadoCalculo(remId, formulaId, resultado, valor_celda) {
   const [result] = await db.execute(
-    'INSERT INTO resultados_calculo (rem_id, formula_calculo_id, resultado) VALUES (?, ?, ?)',
-    [remId, formulaId, resultado]
+    'INSERT INTO resultados_calculo (rem_id, formula_calculo_id, resultado, valor_celda) VALUES (?, ?, ?, ?)',
+    [remId, formulaId, resultado, valor_celda]
   );
   return result;
 }

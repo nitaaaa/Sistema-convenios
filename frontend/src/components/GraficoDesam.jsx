@@ -1,11 +1,79 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import * as echarts from 'echarts';
 
-function GraficoDesam({ resultados, indicadores, meses }) {
+function GraficoDesam({ resultados, indicadores, meses, onPorcentajeAcumuladoChange }) {
+  console.log('Renderizando GraficoDesam');
+  
   const chartRef = useRef(null);
+  const porcentajeAcumuladoRef = useRef([]);
+  const callbackRef = useRef(onPorcentajeAcumuladoChange);
+  const valoresAnterioresRef = useRef(null);
+
+  // Actualizar el callback ref cuando cambia
+  useEffect(() => {
+    console.log('Efecto 1: Actualizando callbackRef');
+    callbackRef.current = onPorcentajeAcumuladoChange;
+  }, [onPorcentajeAcumuladoChange]);
+
+  // Memoizamos la función de cálculo de los valores
+  const calcularValores = useCallback(() => {
+    console.log('Ejecutando calcularValores');
+    if (!resultados) return { valoresBarras: [], porcentajeAcumulado: [] };
+
+    // Primero calculamos los acumulados de cada indicador por mes
+    const acumuladosPorMes = meses.map(mes => {
+      const acumuladosIndicadores = {};
+      indicadores.forEach(indicador => {
+        let totalMes = 0;
+        Object.values(resultados).forEach(establecimiento => {
+          if (establecimiento && establecimiento[mes]) {
+            const formulas = establecimiento[mes].filter(f => f.indicador === indicador);
+            if (formulas.length > 0) {
+              // Filtrar fórmulas que tienen denominador > 0
+              const formulasValidas = formulas.filter(f => f.denominador > 0);
+              
+              // Solo calcular el promedio si hay fórmulas válidas
+              if (formulasValidas.length > 0) {
+                const promedio = formulasValidas.reduce((acc, f) => acc + (typeof f.resultado === 'number' ? f.resultado : 0), 0) / formulasValidas.length;
+                const peso = formulasValidas[0].peso_final || 0;
+                totalMes += promedio * peso;
+              }
+            }
+          }
+        });
+        acumuladosIndicadores[indicador] = totalMes;
+      });
+      return acumuladosIndicadores;
+    });
+
+    // Calculamos los valores acumulados de las barras
+    const valoresBarras = indicadores.map(indicador => {
+      let acumulado = 0;
+      const pesoFinal = Object.values(resultados)[0]?.[meses[0]]?.find(f => f.indicador === indicador)?.peso_final || 0;
+      
+      return meses.map((mes, indexMes) => {
+        acumulado += acumuladosPorMes[indexMes][indicador];
+        acumulado = Math.min(acumulado, pesoFinal);
+        return Number(acumulado.toFixed(2));
+      });
+    });
+
+    // Calculamos la línea usando los valores acumulados de las barras
+    const porcentajeAcumulado = meses.map((mes, indexMes) => {
+      const totalMes = valoresBarras.reduce((sum, barras) => sum + barras[indexMes], 0);
+      return Number(totalMes.toFixed(2));
+    });
+
+    console.log('Valores calculados:', { valoresBarras, porcentajeAcumulado });
+    return { valoresBarras, porcentajeAcumulado };
+  }, [resultados, indicadores, meses]);
 
   useEffect(() => {
-    if (!chartRef.current || !resultados) return;
+    console.log('Efecto 2: Iniciando efecto principal');
+    if (!chartRef.current || !resultados) {
+      console.log('Efecto 2: No hay resultados o chartRef');
+      return;
+    }
 
     // Crear un objeto para almacenar los colores de los indicadores
     const coloresIndicadores = {};
@@ -17,49 +85,44 @@ function GraficoDesam({ resultados, indicadores, meses }) {
       coloresIndicadores[indicador] = coloresBase[index % coloresBase.length];
     });
 
+    // Calculamos los valores
+    const { valoresBarras, porcentajeAcumulado } = calcularValores();
+    
+
+    // Solo actualizamos y notificamos si los valores han cambiado
+    const valoresActuales = JSON.stringify(porcentajeAcumulado);
+    if (valoresActuales !== valoresAnterioresRef.current) {
+      
+      valoresAnterioresRef.current = valoresActuales;
+      porcentajeAcumuladoRef.current = porcentajeAcumulado;
+
+      // Notificar el cambio en el porcentaje acumulado
+      if (callbackRef.current && porcentajeAcumulado.length > 0) {
+        console.log('Efecto 2: Notificando cambio en porcentaje acumulado');
+        callbackRef.current(porcentajeAcumulado);
+      }
+    } else {
+      console.log('Efecto 2: Valores no han cambiado, omitiendo actualización');
+    }
+
     const option = {
-      title: {
-        text: 'Resultados DESAM',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'shadow'
-        },
+      tooltip: { 
+        trigger: 'axis', 
+        axisPointer: { type: 'shadow' },
         formatter: function(params) {
-          let result = `<div style="font-weight: bold; margin-bottom: 5px;">${params[0].axisValue}</div>`;
-          params.forEach(param => {
+          return params.map(param => {
             const color = param.color;
-            const value = param.value.toFixed(2);
-            result += `<div style="display: flex; align-items: center; margin: 3px 0;">
-                        <span style="display: inline-block; width: 10px; height: 10px; background: ${color}; margin-right: 5px;"></span>
-                        <span>${param.seriesName}: ${value}%</span>
-                      </div>`;
-          });
-          return result;
+            return `<div style="display: flex; align-items: center; margin-bottom: 3px;">
+                      <span style="display: inline-block; width: 10px; height: 10px; background: ${color}; margin-right: 5px;"></span>
+                      <span>${param.seriesName}: ${Number(param.value).toFixed(2)}%</span>
+                    </div>`;
+          }).join('');
         }
       },
-      legend: {
-        type: 'scroll',
-        orient: 'vertical',
-        right: 10,
-        top: 20,
-        bottom: 20,
-        data: indicadores
-      },
-      grid: {
-        left: '3%',
-        right: '15%',
-        bottom: '3%',
-        containLabel: true
-      },
-      xAxis: {
-        type: 'category',
-        data: meses,
-        axisLabel: {
-          rotate: 45
-        }
+      legend: { },
+      xAxis: { 
+        data: meses, 
+        axisLabel: { rotate: 45 } 
       },
       yAxis: {
         type: 'value',
@@ -67,32 +130,32 @@ function GraficoDesam({ resultados, indicadores, meses }) {
           formatter: '{value}%'
         }
       },
-      series: indicadores.map(indicador => ({
-        name: indicador,
-        type: 'bar',
-        stack: 'total',
-        data: meses.map((mes, indexMes) => {
-          let total = 0;
-          // Calcular el acumulado hasta el mes actual
-          for (let i = 0; i <= indexMes; i++) {
-            const mesActual = meses[i];
-            Object.values(resultados).forEach(establecimiento => {
-              if (establecimiento && establecimiento[mesActual]) {
-                const formulas = establecimiento[mesActual].filter(f => f.indicador === indicador);
-                if (formulas.length > 0) {
-                  const promedio = formulas.reduce((acc, f) => acc + (typeof f.resultado === 'number' ? f.resultado : 0), 0) / formulas.length;
-                  const peso = formulas[0].peso_final || 0;
-                  total += promedio * peso 
-                }
-              }
-            });
+      series: [
+        // Primero las barras
+        ...indicadores.map((indicador, index) => ({
+          name: indicador,
+          type: 'bar',
+          data: valoresBarras[index],
+          itemStyle: {
+            color: coloresIndicadores[indicador]
           }
-          return Number(total.toFixed(2));
-        }),
-        itemStyle: {
-          color: coloresIndicadores[indicador]
+        })),
+        // Luego la línea
+        {
+          name: 'Porcentaje Acumulado',
+          type: 'line',
+          yAxisIndex: 0,
+          data: porcentajeAcumulado,
+          itemStyle: {
+            color: '#ffc107'
+          },
+          lineStyle: {
+            width: 1.5
+          },
+          symbol: 'circle',
+          symbolSize: 8
         }
-      }))
+      ]
     };
 
     const chart = echarts.init(chartRef.current);
@@ -105,10 +168,11 @@ function GraficoDesam({ resultados, indicadores, meses }) {
     window.addEventListener('resize', handleResize);
 
     return () => {
+      console.log('Efecto 2: Limpieza');
       window.removeEventListener('resize', handleResize);
       chart.dispose();
     };
-  }, [resultados, indicadores, meses]);
+  }, [resultados, indicadores, meses, calcularValores]);
 
   return (
     <div style={{ height: 600, marginBottom: 32, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 16 }}>

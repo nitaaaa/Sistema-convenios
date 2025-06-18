@@ -140,7 +140,6 @@ exports.subirExcel = async (req, res) => {
                 console.warn(`[${archivo.nombre}] No se encontró la fórmula con ID: ${formulaId}`);
                 continue;
               }
-              
 
               // Leer la hoja correspondiente
               const formulaSheet = workbook.Sheets[formula.fuente];
@@ -148,12 +147,8 @@ exports.subirExcel = async (req, res) => {
                 console.warn(`[${archivo.nombre}] No existe la hoja ${formula.fuente} en el archivo`);
                 continue;
               }
-              
-
               // Obtener los valores de las celdas del numerador
               const celdasNumerador = formula.numerador.split(',').map(celda => celda.trim());
-              
-
               let sumaNumerador = 0;
               let valoresEncontrados = [];
               let celdasNoEncontradas = [];
@@ -173,8 +168,6 @@ exports.subirExcel = async (req, res) => {
                 continue;
               }
 
-              
-
               // Calcular el resultado
               let resultado;
               if (formula.denominador === 0) {
@@ -182,12 +175,10 @@ exports.subirExcel = async (req, res) => {
                 resultado = 0;
               } else {
                 resultado = sumaNumerador / formula.denominador;
-                
-                
               }
 
               // Guardar el resultado en la base de datos
-              await guardarResultadoCalculo(remId, formulaId, resultado);
+              await guardarResultadoCalculo(remId, formulaId, resultado, sumaNumerador);
               
 
             } catch (err) {

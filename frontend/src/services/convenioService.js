@@ -120,4 +120,80 @@ export const obtenerResultadosPorMes = async ({ anio, establecimiento, convenioI
     console.log('Error: ', error);
     throw new Error(error.response?.data?.message || 'Error al obtener los resultados por mes');
   }
-} 
+}
+
+// Obtener fechas de validez de un convenio
+export const getFechasValidez = async (convenioId) => {
+  try {
+    const response = await axios.get(`${API_URL}/${convenioId}/fechas`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener fechas de validez:', error);
+    throw error;
+  }
+};
+
+// Obtener componentes de un convenio
+export const getComponentes = async (convenioId) => {
+  try {
+    const response = await axios.get(`${API_URL}/${convenioId}/componentes`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener componentes:', error);
+    throw error;
+  }
+};
+
+// Obtener indicadores de un componente
+export const getIndicadores = async (componenteId) => {
+  try {
+    const response = await axios.get(`${API_URL}/componentes/${componenteId}/indicadores`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener indicadores:', error);
+    throw error;
+  }
+};
+
+// Obtener fórmulas de un indicador
+export const getFormulas = async (indicadorId) => {
+  try {
+    const response = await axios.get(`${API_URL}/indicadores/${indicadorId}/formulas`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener fórmulas:', error);
+    throw error;
+  }
+};
+
+// Calcular resultados de fórmulas por mes
+export const calcularResultadosPorMes = async (params) => {
+  try {
+    const response = await axios.get(`${API_URL}/reportes/calculo`, {
+      params,
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al calcular resultados:', error);
+    throw error;
+  }
+}; 

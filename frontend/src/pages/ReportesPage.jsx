@@ -9,6 +9,8 @@ import GraficoTotales from '../components/GraficoTotales';
 import GraficoEstablecimiento from '../components/GraficoEstablecimiento';
 import GraficoDesam from '../components/GraficoDesam';
 import TablaPrestaciones from '../components/TablaPrestaciones';
+import TablaPesos from '../components/TablaPesos';
+import TablaCumplimientoAcumulado from '../components/TablaCumplimientoAcumulado';
 import { ordenMeses } from '../../constans';
 
 function ReportesPage() {
@@ -20,6 +22,7 @@ function ReportesPage() {
   const [establecimientos, setEstablecimientos] = useState([]);
   const [resultadosPorEstablecimiento, setResultadosPorEstablecimiento] = useState(null);
   const [loadingResultados, setLoadingResultados] = useState(false);
+  const [porcentajeAcumulado, setPorcentajeAcumulado] = useState([]);
 
   // Generar array de años desde 2024 hasta el año actual para el selector
   const currentYear = new Date().getFullYear();
@@ -84,7 +87,6 @@ function ReportesPage() {
         return;
       }
       setLoadingResultados(true);
-      console.time('consulta-resultados'); // INICIO MEDICIÓN
       try {
         const token = localStorage.getItem('authToken');
         let todosEstablecimientos = [];
@@ -121,12 +123,12 @@ function ReportesPage() {
             resultados[est.nombre] = null;
           }
         }
+        console.log('resultados: ', resultados);
         setResultadosPorEstablecimiento(resultados);
       } catch (err) {
         setResultadosPorEstablecimiento(null);
       } finally {
         setLoadingResultados(false);
-        console.timeEnd('consulta-resultados'); // FIN MEDICIÓN
       }
     };
     fetchResultados();
@@ -169,8 +171,6 @@ function ReportesPage() {
               const peso = formulas[0].peso_final || 0;
               const calculo = peso * promedio; // Convertir a decimal
               total = Math.max(total, calculo);
-              console.log('total: ', total);
-              console.log('es un numero? ', typeof total === 'number');
             }
           });
         }
@@ -246,14 +246,30 @@ function ReportesPage() {
 
       {/* Panel de gráficos a la derecha */}
       <div style={{ flex: 1, padding: '32px', background: '#f5f5f5', overflowY: 'auto', maxHeight: '100vh', marginTop: '56px' }}>
-        {/* Gráfico DESAM o gráficos individuales por establecimiento */}
         {datosGraficos && (
           establecimientoSeleccionado === 'DESAM' ? (
-            <GraficoDesam
-              resultados={resultadosPorEstablecimiento}
-              indicadores={datosGraficos.indicadores}
-              meses={datosGraficos.meses}
-            />
+            <>
+              <GraficoDesam
+                resultados={resultadosPorEstablecimiento}
+                indicadores={datosGraficos.indicadores}
+                meses={datosGraficos.meses}
+                onPorcentajeAcumuladoChange={setPorcentajeAcumulado}
+              />
+              <div style={{ display: 'flex', gap: '32px' }}>
+                <div style={{ flex: 1 }}>
+                  <TablaPesos
+                    indicadores={datosGraficos.indicadores}
+                    resultados={resultadosPorEstablecimiento}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <TablaCumplimientoAcumulado
+                    meses={datosGraficos.meses}
+                    porcentajeAcumulado={porcentajeAcumulado}
+                  />
+                </div>
+              </div>
+            </>
           ) : (
             Object.keys(resultadosPorEstablecimiento || {})
               .filter(nombreEst => nombreEst && resultadosPorEstablecimiento[nombreEst])
