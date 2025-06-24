@@ -1,42 +1,65 @@
 import { useState, useEffect } from 'react'
-import { Container } from 'react-bootstrap'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Container, Form, Alert } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
 import UsuarioForm from '../../components/UsuarioForm'
 import './EditarUsuarioPage.css'
-import { editarUsuario, obtenerUsuarioPorId } from '../../services/usuarioService'
+import { editarUsuario, obtenerUsuarioPorId, listarUsuarios } from '../../services/usuarioService'
 
 function EditarUsuarioPage() {
   const navigate = useNavigate()
-  const { id } = useParams()
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [usuarios, setUsuarios] = useState([])
+  const [selectedUserId, setSelectedUserId] = useState('')
   const [initialData, setInitialData] = useState(null)
 
+  // Cargar lista de usuarios al montar el componente
   useEffect(() => {
-    const loadUser = async () => {
+    const cargarUsuarios = async () => {
       try {
         const token = localStorage.getItem('authToken')
-        const response = await obtenerUsuarioPorId(id, token)
-        setInitialData(response.data)
-      } catch (error) {
-        setError('Error al cargar los datos del usuario')
-      } finally {
-        setLoading(false)
+        const rut = localStorage.getItem('rut')
+        const response = await listarUsuarios(token, rut)
+        setUsuarios(response.data)
+      } catch (e) {
+        setError('Error al cargar la lista de usuarios')
       }
     }
+    cargarUsuarios()
+  }, [])
 
-    loadUser()
-  }, [id])
-
-  const handleSubmit = async (formData) => {
+  // Cargar datos del usuario seleccionado
+  const handleUsuarioSelect = async (e) => {
+    const id = e.target.value
+    setSelectedUserId(id)
+    
+    if (!id) {
+      setInitialData(null)
+      return
+    }
+    
     try {
       const token = localStorage.getItem('authToken')
-      await editarUsuario(id, formData, token)
+      const response = await obtenerUsuarioPorId(id, token)
+      setInitialData(response.data)
+      setError('')
+    } catch (e) {
+      setError('Error al cargar el usuario seleccionado')
+      setInitialData(null)
+    }
+  }
+
+  const handleSubmit = async (formData) => {
+    if (!selectedUserId) {
+      setError('Debe seleccionar un usuario para editar')
+      return
+    }
+    
+    try {
+      const token = localStorage.getItem('authToken')
+      await editarUsuario(selectedUserId, formData, token)
       setSuccess('Usuario actualizado exitosamente')
-      setTimeout(() => {
-        navigate('/usuarios')
-      }, 2000)
+      
     } catch (error) {
       setError(
         error.response?.data?.message ||
@@ -45,21 +68,24 @@ function EditarUsuarioPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 200 }}>
-        <div className="spinner-border" role="status">
-          <span className="visually-hidden">Cargando...</span>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <Container className="editar-usuario-container mt-4">
       <h2 className="mb-4">Editar Usuario</h2>
-      {error && <div className="alert alert-danger">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {error && <Alert variant="danger">{error}</Alert>}
+      {success && <Alert variant="success">{success}</Alert>}
+
+      <Form.Group className="mb-4">
+        <Form.Label>Seleccionar usuario para editar</Form.Label>
+        <Form.Select onChange={handleUsuarioSelect} value={selectedUserId}>
+          <option value="">-- Selecciona un usuario --</option>
+          {usuarios.map((u, index) => (
+            <option key={`${u.rut}-${index}`} value={u.rut}>
+              {u.nombres} {u.apellido_paterno} {u.apellido_materno} ({u.rut})
+            </option>
+          ))}
+        </Form.Select>
+      </Form.Group>
+
       {initialData && (
         <UsuarioForm 
           initialData={initialData}

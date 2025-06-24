@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Form, Button, Alert, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import './ConvenioForm.css'
+import CuotasForm from './CuotasForm'
 
 function ConvenioForm({ initialData, onSubmit, modo}) {
-  const [formData, setFormData] = useState(initialData)
+  const [formData, setFormData] = useState({
+    ...initialData,
+    cuotas: initialData?.cuotas || []
+  })
   const [erroresIndicadores, setErroresIndicadores] = useState({})
   const [indicadorEditando, setIndicadorEditando] = useState({ componente: null, indicador: null });
 
@@ -20,10 +24,41 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
     nuevoIndicador: { ...indicadorVacio }
   })
 
+  // Función para formatear el monto con separadores de miles
+  const formatearMonto = (valor) => {
+    if (!valor) return '';
+    // Remover cualquier separador existente y convertir a número
+    const numero = valor.toString().replace(/\./g, '');
+    // Formatear con separadores de miles
+    return numero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Función para limpiar el formato del monto
+  const limpiarFormatoMonto = (valor) => {
+    if (!valor) return '';
+    // Remover todos los puntos y convertir a número
+    return valor.toString().replace(/\./g, '');
+  };
+
+  // Formatear el monto cuando se cargan los datos iniciales
+  useEffect(() => {
+    if (initialData?.monto) {
+      setFormData(prev => ({
+        ...prev,
+        monto: formatearMonto(initialData.monto)
+      }));
+    }
+  }, [initialData]);
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await onSubmit(formData)
+      // Limpiar el formato del monto antes de enviar
+      const datosParaEnviar = {
+        ...formData,
+        monto: limpiarFormatoMonto(formData.monto)
+      };
+      await onSubmit(datosParaEnviar)
     } catch (error) {
       // No setError aquí
     }
@@ -31,10 +66,21 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    if (name === 'monto') {
+      // Solo permitir números y puntos
+      const valorLimpio = value.replace(/[^\d.]/g, '');
+      // Formatear el monto
+      const montoFormateado = formatearMonto(valorLimpio);
+      setFormData(prev => ({
+        ...prev,
+        [name]: montoFormateado
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   }
 
   const handleAddComponente = () => {
@@ -242,7 +288,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
               <Form.Control
                 type="date"
                 name="fechaInicio"
-                value={formData.fechaInicio}
+                value={formData.inicio}
                 onChange={e => setFormData(prev => ({ ...prev, fechaInicio: e.target.value }))}
                 required
               />
@@ -254,7 +300,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
               <Form.Control
                 type="date"
                 name="fechaFin"
-                value={formData.fechaFin}
+                value={formData.termino}
                 onChange={e => setFormData(prev => ({ ...prev, fechaFin: e.target.value }))}
                 required
               />
@@ -262,22 +308,29 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
           </Col>
         </Row>
         <Row>
-          
           <Col md={6}>
             <Form.Group className="mb-3">
               <Form.Label>Monto</Form.Label>
               <Form.Control
-                type="number"
+                type="text"
                 name="monto"
                 value={formData.monto}
-                onChange={e => setFormData(prev => ({ ...prev, monto: e.target.value }))}
+                onChange={handleChange}
                 required
-                min="0"
-                step="0.01"
+                placeholder="Ej: 1.000.000"
               />
             </Form.Group>
           </Col>
         </Row>
+      </div>
+
+      {/* Sección de Cuotas */}
+      <div className="seccion-container mb-3 p-3">
+        <CuotasForm 
+          cuotas={formData.cuotas || []} 
+          setCuotas={(cuotas) => setFormData(prev => ({ ...prev, cuotas }))}
+          modo={modo}
+        />
       </div>
 
       <div className="seccion-container border rounded mb-4 p-3">
@@ -331,7 +384,7 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
                         <Col md={2}>
                           <Form.Control
                             type="text"
-                            value={indicador.pesoFinal}
+                            value={indicador.pesoFinal || indicador.peso_final || ''}
                             onChange={e => handleIndicadorEdit(componenteIndex, indicadorIndex, 'pesoFinal', e.target.value)}
                             disabled={!(indicadorEditando.componente === componenteIndex && indicadorEditando.indicador === indicadorIndex)}
                           />

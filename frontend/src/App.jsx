@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import ReportesPage from './pages/ReportesPage'
 import CrearConvenioPage from './pages/convenios/CrearConvenioPage'
@@ -11,15 +11,20 @@ import CrearEstablecimientoPage from './pages/establecimientos/CrearEstablecimie
 import './App.css'
 import AppNavbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
+import { AuthProvider } from './context/AuthContext'
+import useSessionTimeout from './hooks/useSessionTimeout'
 
 function AppContent() {
   const location = useLocation()
   const isLoginPage = location.pathname === '/login' || location.pathname === '/'
 
+  // Implementar el hook de timeout de sesión
+  useSessionTimeout()
+
   return (
     <>
       {!isLoginPage && <AppNavbar />}
-      <main>
+      <main className="container-fluid py-4">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<LoginPage />} />
@@ -47,7 +52,9 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </Router>
   )
 }

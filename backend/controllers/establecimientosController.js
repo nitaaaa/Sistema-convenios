@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const XLSX = require('xlsx');
-const { listarEstablecimientosPorComuna, listarEstablecimientosDependientes, obtenerEstablecimientoPorId, buscarEstablecimientoPorNombreYComuna } = require('../models/establecimientoModel');
+const { listarEstablecimientos, listarEstablecimientosPorComuna, listarEstablecimientosDependientes, obtenerEstablecimientoPorId, buscarEstablecimientoPorNombreYComuna } = require('../models/establecimientoModel');
 
 exports.getEstablecimientos = async (req, res) => {
   try {

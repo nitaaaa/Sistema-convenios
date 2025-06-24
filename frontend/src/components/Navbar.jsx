@@ -1,34 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { Navbar, Nav, NavDropdown, Container } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import useSessionTimeout from '../hooks/useSessionTimeout';
 import './Navbar.css';
 import DESAMBlanco from '../assets/DESAM-blanco.png';
 
 function AppNavbar() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [timeLeft, setTimeLeft] = useState(0);
 
-  // Logout
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
-    localStorage.removeItem('expiresAt');
-    navigate('/login');
+  // Formatea el tiempo en mm:ss
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
-  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-  const userName = userData.nombre || 'Usuario';
-
-  // Contador de tiempo restante de sesión
+  // Actualizar el tiempo restante cada segundo
   useEffect(() => {
     const updateTimer = () => {
       const expiresAt = localStorage.getItem('expiresAt');
       if (expiresAt) {
         const diff = Math.max(0, Math.floor((Number(expiresAt) - Date.now()) / 1000));
         setTimeLeft(diff);
-        if (diff <= 0) {
-          handleLogout();
-        }
       } else {
         setTimeLeft(0);
       }
@@ -37,13 +33,6 @@ function AppNavbar() {
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  // Formatea el tiempo en mm:ss
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const s = (seconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  };
 
   return (
     <Navbar bg="dark" variant="dark" expand="lg" fixed="top">
@@ -70,7 +59,6 @@ function AppNavbar() {
               <NavDropdown.Item href="/usuarios/editar">Editar Usuario</NavDropdown.Item>
             </NavDropdown>
 
-            {/* Submenú Administrar */}
             <NavDropdown title="Administrar" id="administrar-dropdown">
               <NavDropdown.Header>Comunas</NavDropdown.Header>
               <NavDropdown.Item href="/comunas/agregarConvenio">Agregar convenio</NavDropdown.Item>
@@ -96,10 +84,10 @@ function AppNavbar() {
             >
               {timeLeft > 0 && `Sesión: ${formatTime(timeLeft)}`}
             </span>
-            <NavDropdown title={userName} id="user-dropdown" align="end">
+            <NavDropdown title={user?.nombre || 'Usuario'} id="user-dropdown" align="end">
               <NavDropdown.Item href="/usuarios/perfil">Mi Perfil</NavDropdown.Item>
               <NavDropdown.Divider />
-              <NavDropdown.Item onClick={handleLogout}>Cerrar Sesión</NavDropdown.Item>
+              <NavDropdown.Item onClick={logout}>Cerrar Sesión</NavDropdown.Item>
             </NavDropdown>
           </Nav>
         </Navbar.Collapse>

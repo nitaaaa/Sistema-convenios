@@ -1,9 +1,8 @@
 const db = require('../config/database');
-const { crearConvenio } = require('../models/convenioModel');
+const { crearConvenio, getConveniosPorAnio, getConvenioPorId, crearCuota, crearDescuento, getCuotasPorConvenio, getDescuentosPorCuota, actualizarDatosConvenio, eliminarCuotasConvenio, eliminarComponentesConvenio } = require('../models/convenioModel');
 const { crearComponente, getComponentesPorConvenio } = require('../models/componenteModel');
 const { crearIndicador, getIndicadoresPorComponente } = require('../models/indicadorModel');
-const { crearFormulaCalculo, getFormulasPorIndicador } = require('../models/formulaCalculo');
-const { getConveniosPorAnio: getConveniosPorAnioModel } = require('../models/convenioModel');
+const { crearFormulaCalculo, getFormulasPorIndicador, getFormulaIdsByConvenio } = require('../models/formulaCalculoModel');
 const path = require('path');
 const fs = require('fs');
 const XLSX = require('xlsx');
@@ -15,7 +14,7 @@ function validarCeldaExcel(valor) {
 }
 
 async function createConvenio(req, res) {
-  const { nombre, descripcion, fechaInicio, fechaFin, monto, componentes } = req.body;
+  const { nombre, descripcion, fechaInicio, fechaFin, monto, componentes, cuotas } = req.body;
   if (!nombre || !fechaInicio || !fechaFin || !monto) {
     return res.status(400).json({ message: 'Faltan campos obligatorios' });
   }
@@ -35,6 +34,36 @@ async function createConvenio(req, res) {
   // Validación 5: Monto entero
   if (!Number.isInteger(Number(monto))) {
     return res.status(400).json({ message: 'El monto debe ser un valor entero' });
+  }
+
+  // Validaciones de cuotas
+  if (Array.isArray(cuotas)) {
+    for (const cuota of cuotas) {
+      if (!cuota.fechaRendicion) {
+        return res.status(400).json({ message: 'Todas las cuotas deben tener una fecha de rendición' });
+      }
+      
+      if (!Array.isArray(cuota.porcentajes) || cuota.porcentajes.length === 0) {
+        return res.status(400).json({ message: 'Todas las cuotas deben tener al menos un porcentaje de cumplimiento' });
+      }
+
+      for (const porcentaje of cuota.porcentajes) {
+        if (!porcentaje.valor || !porcentaje.descuento) {
+          return res.status(400).json({ message: 'Todos los porcentajes deben tener valor y descuento' });
+        }
+        
+        const valor = parseFloat(porcentaje.valor);
+        const descuento = parseFloat(porcentaje.descuento);
+        
+        if (isNaN(valor) || valor <= 0 || valor > 100) {
+          return res.status(400).json({ message: 'Los valores de cumplimiento deben estar entre 0 y 100' });
+        }
+        
+        if (isNaN(descuento) || descuento < 0 || descuento > 100) {
+          return res.status(400).json({ message: 'Los descuentos deben estar entre 0 y 100' });
+        }
+      }
+    }
   }
 
   // Validaciones de componentes, indicadores y fórmulas
@@ -92,6 +121,27 @@ async function createConvenio(req, res) {
     await connection.beginTransaction();
     const result = await crearConvenio({ nombre, descripcion, fechaInicio, fechaFin, monto }, connection);
     const convenioId = result.insertId;
+
+    // Crear cuotas y descuentos
+    if (Array.isArray(cuotas)) {
+      for (const cuota of cuotas) {
+        const cuotaResult = await crearCuota({
+          fecha: cuota.fechaRendicion,
+          convenioId
+        }, connection);
+        const cuotaId = cuotaResult.insertId;
+
+        // Crear descuentos para esta cuota
+        for (const porcentaje of cuota.porcentajes) {
+          await crearDescuento({
+            cuotaId,
+            techo: parseFloat(porcentaje.valor),
+            descuento: parseFloat(porcentaje.descuento)
+          }, connection);
+        }
+      }
+    }
+
     if (Array.isArray(componentes)) {
       for (const componente of componentes) {
         const compResult = await crearComponente({ nombre: componente.nombre, convenioId }, connection);
@@ -123,7 +173,7 @@ async function createConvenio(req, res) {
 
     //aqui cuando se ingresen los datos se deberá revisar si existen archivos que no se le han aplicado las formulas
 
-    res.status(201).json({ message: 'Convenio, componentes, indicadores y fórmulas de cálculo creados exitosamente', convenioId });
+    res.status(201).json({ message: 'Convenio, cuotas, componentes, indicadores y fórmulas de cálculo creados exitosamente', convenioId });
   } catch (error) {
     await connection.rollback();
     console.error(error);
@@ -134,14 +184,74 @@ async function createConvenio(req, res) {
 }
 
 // Obtener convenios por año
-async function getConveniosPorAnio(req, res) {
+async function obtenerConveniosPorAnio(req, res) {
   const { anio } = req.params;
   try {
-    const rows = await getConveniosPorAnioModel(anio);
+    const rows = await getConveniosPorAnio(anio);
     res.json(rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error al obtener los convenios del año especificado' });
+  }
+}
+
+// Obtener convenio por ID
+async function obtenerConvenioPorId(req, res) {
+  const { convenioId } = req.params;
+  try {
+    const convenio = await getConvenioPorId(convenioId);
+    if (!convenio) {
+      return res.status(404).json({ message: 'No se encontró el convenio' });
+    }
+
+    // Formatear las fechas para el frontend
+    const convenioFormateado = {
+      ...convenio,
+      inicio: convenio.inicio ? new Date(convenio.inicio).toISOString().split('T')[0] : '',
+      termino: convenio.termino ? new Date(convenio.termino).toISOString().split('T')[0] : ''
+    };
+
+    // Obtener componentes del convenio
+    const componentes = await getComponentesPorConvenio(convenioId);
+    
+    // Para cada componente, obtener sus indicadores
+    for (const componente of componentes) {
+      const indicadores = await getIndicadoresPorComponente(componente.id);
+      
+      // Para cada indicador, obtener sus fórmulas y mapear campos
+      for (const indicador of indicadores) {
+        const formulas = await getFormulasPorIndicador(indicador.id);
+        indicador.formulas = formulas;
+        
+        // Asegurar que el peso final se mapee correctamente
+        indicador.pesoFinal = indicador.peso_final;
+      }
+      
+      componente.indicadores = indicadores;
+    }
+
+    // Obtener cuotas del convenio
+    const cuotas = await getCuotasPorConvenio(convenioId);
+    
+    // Para cada cuota, obtener sus descuentos
+    for (const cuota of cuotas) {
+      const descuentos = await getDescuentosPorCuota(cuota.id);
+      cuota.porcentajes = descuentos.map(d => ({
+        valor: d.techo,
+        descuento: d.descuento
+      }));
+    }
+
+    const convenioCompleto = {
+      ...convenioFormateado,
+      componentes,
+      cuotas
+    };
+
+    res.json(convenioCompleto);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al obtener el convenio' });
   }
 }
 
@@ -189,13 +299,13 @@ async function calcularResultadosPorMes(req, res) {
   }
   try {
     // 1. Obtener convenio y sus fechas
-    const convenio = await require('../models/convenioModel').getConvenioPorId(convenioId);
+    const convenio = await getConvenioPorId(convenioId);
     if (!convenio) {
       return res.status(404).json({ message: 'No se encontró el convenio' });
     }
 
     // 2. Obtener todas las fórmulas asociadas al convenio
-    const formulaIds = await require('../models/formulaCalculoModel').getFormulaIdsByConvenio(convenioId);
+    const formulaIds = await getFormulaIdsByConvenio(convenioId);
     if (!formulaIds || formulaIds.length === 0) {
       return res.status(404).json({ message: 'No se encontraron fórmulas asociadas al convenio' });
     }
@@ -271,7 +381,7 @@ async function calcularResultadosPorMes(req, res) {
 async function getFechasValidez(req, res) {
   const { convenioId } = req.params;
   try {
-    const convenio = await require('../models/convenioModel').getConvenioPorId(convenioId);
+    const convenio = await getConvenioPorId(convenioId);
     if (!convenio) {
       return res.status(404).json({ message: 'No se encontró el convenio' });
     }
@@ -286,9 +396,186 @@ async function getFechasValidez(req, res) {
   }
 }
 
+// Actualizar convenio
+async function actualizarConvenio(req, res) {
+  const { convenioId } = req.params;
+  const { nombre, descripcion, fechaInicio, fechaFin, monto, componentes, cuotas } = req.body;
+  
+  if (!nombre || !fechaInicio || !fechaFin || !monto) {
+    return res.status(400).json({ message: 'Faltan campos obligatorios' });
+  }
+
+  // Validación: Fecha de inicio menor a fecha de fin
+  if (new Date(fechaInicio) >= new Date(fechaFin)) {
+    return res.status(400).json({ message: 'La fecha de inicio debe ser menor a la fecha de fin' });
+  }
+
+  // Validación: Monto entero
+  if (!Number.isInteger(Number(monto))) {
+    return res.status(400).json({ message: 'El monto debe ser un valor entero' });
+  }
+
+  // Validaciones de cuotas
+  if (Array.isArray(cuotas)) {
+    for (const cuota of cuotas) {
+      if (!cuota.fechaRendicion) {
+        return res.status(400).json({ message: 'Todas las cuotas deben tener una fecha de rendición' });
+      }
+      
+      if (!Array.isArray(cuota.porcentajes) || cuota.porcentajes.length === 0) {
+        return res.status(400).json({ message: 'Todas las cuotas deben tener al menos un porcentaje de cumplimiento' });
+      }
+
+      for (const porcentaje of cuota.porcentajes) {
+        if (!porcentaje.valor || !porcentaje.descuento) {
+          return res.status(400).json({ message: 'Todos los porcentajes deben tener valor y descuento' });
+        }
+        
+        const valor = parseFloat(porcentaje.valor);
+        const descuento = parseFloat(porcentaje.descuento);
+        
+        if (isNaN(valor) || valor <= 0 || valor > 100) {
+          return res.status(400).json({ message: 'Los valores de cumplimiento deben estar entre 0 y 100' });
+        }
+        
+        if (isNaN(descuento) || descuento < 0 || descuento > 100) {
+          return res.status(400).json({ message: 'Los descuentos deben estar entre 0 y 100' });
+        }
+      }
+    }
+  }
+
+  // Validaciones de componentes, indicadores y fórmulas
+  let celdasUsadas = new Set();
+  let sumaPesosTotal = 0;
+
+  // Validación: Debe existir al menos un componente
+  if (!Array.isArray(componentes) || componentes.length === 0) {
+    return res.status(400).json({ message: 'Debe existir al menos un componente.' });
+  }
+
+  if (Array.isArray(componentes)) {
+    for (const componente of componentes) {
+      
+      // Validación: Cada componente debe tener al menos un indicador
+      if (!Array.isArray(componente.indicadores) || componente.indicadores.length === 0) {
+        return res.status(400).json({ message: `El componente '${componente.nombre}' debe tener al menos un indicador.` });
+      }
+      if (Array.isArray(componente.indicadores)) {
+        for (const indicador of componente.indicadores) {
+          sumaPesosTotal += Number(indicador.pesoFinal);
+
+          // Validación: Cada indicador debe tener al menos una fórmula de cálculo
+          if (!Array.isArray(indicador.formulas) || indicador.formulas.length === 0) {
+            return res.status(400).json({ message: `El indicador '${indicador.nombre}' debe tener al menos una fórmula de cálculo.` });
+          }
+          
+          // Validación: Fórmulas
+          if (Array.isArray(indicador.formulas)) {
+            for (const formula of indicador.formulas) {
+              if (!validarCeldaExcel(formula.numerador)) {
+                return res.status(400).json({ message: `El numerador '${formula.numerador}' no es una celda de Excel válida.` });
+              }
+              if (!Number.isInteger(Number(formula.denominador))) {
+                return res.status(400).json({ message: `El denominador de la fórmula '${formula.titulo}' debe ser un valor entero.` });
+              }
+              const celda = formula.numerador.toUpperCase();
+              if (celdasUsadas.has(celda)) {
+                return res.status(400).json({ message: `La celda '${celda}' ya fue utilizada en otra fórmula de cálculo.` });
+              }
+              celdasUsadas.add(celda);
+            }
+          }
+        }
+      }
+    }
+    // Validación: La suma total de los pesos debe ser 100
+    if (sumaPesosTotal !== 100) {
+      return res.status(400).json({ message: `La suma de los pesos finales de todos los indicadores debe ser 100.` });
+    }
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // Actualizar datos básicos del convenio
+    await actualizarDatosConvenio({ 
+      id: convenioId, 
+      nombre, 
+      descripcion, 
+      fechaInicio, 
+      fechaFin, 
+      monto 
+    }, connection);
+
+    // Eliminar cuotas existentes y crear nuevas
+    await eliminarCuotasConvenio(convenioId, connection);
+    if (Array.isArray(cuotas)) {
+      for (const cuota of cuotas) {
+        const cuotaResult = await crearCuota({
+          fecha: cuota.fechaRendicion,
+          convenioId
+        }, connection);
+        const cuotaId = cuotaResult.insertId;
+
+        // Crear descuentos para esta cuota
+        for (const porcentaje of cuota.porcentajes) {
+          await crearDescuento({
+            cuotaId,
+            techo: parseFloat(porcentaje.valor),
+            descuento: parseFloat(porcentaje.descuento)
+          }, connection);
+        }
+      }
+    }
+
+    // Eliminar componentes existentes y crear nuevos
+    await eliminarComponentesConvenio(convenioId, connection);
+    if (Array.isArray(componentes)) {
+      for (const componente of componentes) {
+        const compResult = await crearComponente({ nombre: componente.nombre, convenioId }, connection);
+        const componenteId = compResult.insertId;
+        if (Array.isArray(componente.indicadores)) {
+          for (const indicador of componente.indicadores) {
+            const indResult = await crearIndicador({
+              nombre: indicador.nombre,
+              pesoFinal: indicador.pesoFinal,
+              fuente: indicador.fuente,
+              componenteId
+            }, connection);
+            const indicadorId = indResult.insertId;
+            if (Array.isArray(indicador.formulas)) {
+              for (const formula of indicador.formulas) {
+                const formulaResult = await crearFormulaCalculo({
+                  titulo: formula.titulo,
+                  numerador: formula.numerador,
+                  denominador: formula.denominador,
+                  indicadorId
+                }, connection);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    await connection.commit();
+    res.json({ message: 'Convenio actualizado exitosamente' });
+  } catch (error) {
+    await connection.rollback();
+    console.error(error);
+    res.status(500).json({ message: 'Error al actualizar el convenio' });
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = { 
   createConvenio, 
-  getConveniosPorAnio, 
+  obtenerConveniosPorAnio, 
+  obtenerConvenioPorId,
+  actualizarConvenio,
   componentesPorConvenio, 
   indicadoresPorComponente, 
   formulasPorIndicador, 

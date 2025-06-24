@@ -26,20 +26,30 @@ export const obtenerConvenios = async () => {
 }
 
 export const obtenerConvenioPorId = async (id) => {
+  const token = localStorage.getItem('authToken');
   try {
-    const response = await axios.get(`${API_URL}/convenios/${id}`)
-    return response.data
+    const response = await axios.get(`${API_URL}/convenios/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Error al obtener el convenio')
+    throw new Error(error.response?.data?.message || 'Error al obtener el convenio');
   }
 }
 
 export const actualizarConvenio = async (id, convenioData) => {
+  const token = localStorage.getItem('authToken');
   try {
-    const response = await axios.put(`${API_URL}/convenios/${id}`, convenioData)
-    return response.data
+    const response = await axios.put(`${API_URL}/convenios/${id}`, convenioData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Error al actualizar el convenio')
+    throw new Error(error.response?.data?.message || 'Error al actualizar el convenio');
   }
 }
 
@@ -120,7 +130,7 @@ export const obtenerResultadosPorMes = async ({ anio, establecimiento, convenioI
     console.log('Error: ', error);
     throw new Error(error.response?.data?.message || 'Error al obtener los resultados por mes');
   }
-}
+} 
 
 // Obtener fechas de validez de un convenio
 export const getFechasValidez = async (convenioId) => {
@@ -195,5 +205,22 @@ export const calcularResultadosPorMes = async (params) => {
   } catch (error) {
     console.error('Error al calcular resultados:', error);
     throw error;
+  }
+};
+
+// Función para cargar convenios por año con manejo de estado
+export const cargarConveniosPorAnio = async (anio, setConvenios, setConvenio) => {
+  if (anio) {
+    try {
+      const data = await obtenerConveniosPorAnio(anio);
+      setConvenios(data);
+      setConvenio(''); // Limpiar selección anterior
+    } catch (error) {
+      setConvenios([]);
+      console.error('Error al cargar convenios:', error);
+    }
+  } else {
+    setConvenios([]);
+    setConvenio('');
   }
 }; 

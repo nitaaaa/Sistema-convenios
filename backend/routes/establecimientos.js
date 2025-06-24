@@ -25,7 +25,6 @@ router.post('/nuevo', verifyToken, async (req, res) => {
   }
 });
 
-
 // Obtener todos los establecimientos
 router.get('/', verifyToken, getEstablecimientos);
 

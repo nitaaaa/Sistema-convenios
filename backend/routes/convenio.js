@@ -2,14 +2,20 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/auth');
 const { createConvenio } = require('../controllers/convenioController');
-const { getConveniosPorAnio } = require('../controllers/convenioController');
+const { obtenerConveniosPorAnio, obtenerConvenioPorId, actualizarConvenio } = require('../controllers/convenioController');
 const { componentesPorConvenio, indicadoresPorComponente, formulasPorIndicador, calcularResultadosPorMes, getFechasValidez } = require('../controllers/convenioController');
 
 // Crear convenio
 router.post('/', verifyToken, createConvenio);
 
 // Obtener convenios por año
-router.get('/anio/:anio', verifyToken, getConveniosPorAnio);
+router.get('/anio/:anio', verifyToken, obtenerConveniosPorAnio);
+
+// Obtener convenio por ID
+router.get('/:convenioId', verifyToken, obtenerConvenioPorId);
+
+// Actualizar convenio
+router.put('/:convenioId', verifyToken, actualizarConvenio);
 
 // Obtener fechas de validez de un convenio
 router.get('/:convenioId/fechas', verifyToken, getFechasValidez);

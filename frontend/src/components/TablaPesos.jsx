@@ -35,7 +35,7 @@ function TablaPesos({ indicadores, resultados }) {
             {pesosIndicadores.map(({ indicador, peso }) => (
               <tr key={indicador}>
                 <td>{indicador}</td>
-                <td className="text-end">{Number(peso).toFixed(2)}</td>
+                <td className="text-end">{Number(peso).toFixed(0) + '%'}</td>
               </tr>
             ))}
           </tbody>

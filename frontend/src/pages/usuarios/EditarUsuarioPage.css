@@ -10,6 +10,24 @@
   font-weight: 600;
 }
 
+.editar-usuario-container h5 {
+  color: #495057;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.seccion-container {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.seccion-container h5 {
+  color: #0d6efd;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
 .spinner-border {
   width: 3rem;
   height: 3rem;
@@ -19,5 +37,9 @@
 @media (max-width: 768px) {
   .editar-usuario-container {
     padding: 15px;
+  }
+  
+  .seccion-container {
+    padding: 15px !important;
   }
 } 

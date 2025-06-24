@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Form, Button, Row, Col } from 'react-bootstrap'
+import { Form, Button, Row, Col, Table } from 'react-bootstrap'
 
-function CuotasForm({ cuotas, setCuotas, modo }) {
+function CuotasForm({ cuotas = [], setCuotas, modo }) {
   const [nuevaCuota, setNuevaCuota] = useState({
     fechaRendicion: '',
     porcentajes: [{ valor: '', descuento: '' }]
@@ -32,7 +32,10 @@ function CuotasForm({ cuotas, setCuotas, modo }) {
       return
     }
 
-    setCuotas(prev => ([...prev, { ...nuevaCuota }]))
+    const cuotasActualizadas = Array.isArray(cuotas) ? [...cuotas] : []
+    cuotasActualizadas.push({ ...nuevaCuota })
+    setCuotas(cuotasActualizadas)
+
     setNuevaCuota({
       fechaRendicion: '',
       porcentajes: [{ valor: '', descuento: '' }]
@@ -133,60 +136,80 @@ function CuotasForm({ cuotas, setCuotas, modo }) {
         )}
       </div>
 
-      <Button variant="primary" onClick={handleAddCuota}>
+      <Button variant="primary" onClick={handleAddCuota} className="mb-3">
         Agregar Cuota
       </Button>
 
-      {cuotas.map((cuota, index) => (
-        <div key={index} className="mb-3 p-3 border rounded border-black">
-          <h5>Cuota {index + 1}</h5>
-          <Form.Group className="mb-2">
-            <Form.Label>Fecha de Rendición</Form.Label>
-            {modo === "modificar" ? (
-              <Form.Control
-                type="date"
-                value={cuota.fechaRendicion}
-                onChange={e => handleCuotaChange(index, 'fechaRendicion', e.target.value)}
-              />
-            ) : (
-              <p><strong>{cuota.fechaRendicion}</strong></p>
-            )}
-          </Form.Group>
-          <h6>Porcentajes de Cumplimiento:</h6>
-          {cuota.porcentajes.map((p, i) => (
-            <div key={i} className="mb-2">
-              {modo === "modificar" ? (
-                <Row>
-                  <Col md={5}>
-                    <Form.Control
-                      type="number"
-                      value={p.valor}
-                      onChange={e => handlePorcentajeCuotaChange(index, i, 'valor', e.target.value)}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                    />
-                  </Col>
-                  <Col md={5}>
-                    <Form.Control
-                      type="number"
-                      value={p.descuento}
-                      onChange={e => handlePorcentajeCuotaChange(index, i, 'descuento', e.target.value)}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                    />
-                  </Col>
-                </Row>
-              ) : (
-                <p>
-                  Cumplimiento: {p.valor}% - Descuento: {p.descuento}%
-                </p>
-              )}
-            </div>
-          ))}
+      {Array.isArray(cuotas) && cuotas.length > 0 && (
+        <div className="table-responsive">
+          <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Fecha de Rendición</th>
+                <th>Porcentajes de Cumplimiento</th>
+                <th>Descuentos Asociados</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cuotas.map((cuota, index) => (
+                <tr key={index}>
+                  <td>{index + 1}</td>
+                  <td>
+                    {modo === "modificar" ? (
+                      <Form.Control
+                        type="date"
+                        value={cuota.fechaRendicion}
+                        onChange={e => handleCuotaChange(index, 'fechaRendicion', e.target.value)}
+                      />
+                    ) : (
+                      cuota.fechaRendicion
+                    )}
+                  </td>
+                  <td>
+                    {cuota.porcentajes.map((p, i) => (
+                      <div key={i} className="mb-1">
+                        {modo === "modificar" ? (
+                          <Form.Control
+                            type="number"
+                            value={p.valor}
+                            onChange={e => handlePorcentajeCuotaChange(index, i, 'valor', e.target.value)}
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            className="mb-1"
+                          />
+                        ) : (
+                          <div>{p.valor}%</div>
+                        )}
+                      </div>
+                    ))}
+                  </td>
+                  <td>
+                    {cuota.porcentajes.map((p, i) => (
+                      <div key={i} className="mb-1">
+                        {modo === "modificar" ? (
+                          <Form.Control
+                            type="number"
+                            value={p.descuento}
+                            onChange={e => handlePorcentajeCuotaChange(index, i, 'descuento', e.target.value)}
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            className="mb-1"
+                          />
+                        ) : (
+                          <div>{p.descuento}%</div>
+                        )}
+                      </div>
+                    ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         </div>
-      ))}
+      )}
     </div>
   )
 }

@@ -24,13 +24,10 @@ export const obtenerUsuarioPorId = async (id, token) => {
   })
 }
 
-export const listarUsuarios = async (token, rut) => {
+export const listarUsuarios = async (token) => {
   return axios.get('/api/usuarios', {
     headers: {
       Authorization: `Bearer ${token}`,
-    },
-    params: {
-      rut: rut,
     },
   })
 }

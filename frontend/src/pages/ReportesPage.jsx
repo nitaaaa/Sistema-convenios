@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './ReportesPage.css'
-import { obtenerConveniosPorAnio } from '../services/convenioService';
+import { obtenerConveniosPorAnio, cargarConveniosPorAnio } from '../services/convenioService';
 import axios from 'axios';
 import { Spinner } from 'react-bootstrap';
 import { obtenerEstablecimientoPorId } from '../services/establecimientoService';
@@ -11,6 +11,7 @@ import GraficoDesam from '../components/GraficoDesam';
 import TablaPrestaciones from '../components/TablaPrestaciones';
 import TablaPesos from '../components/TablaPesos';
 import TablaCumplimientoAcumulado from '../components/TablaCumplimientoAcumulado';
+import TablaProyecciones from '../components/TablaProyecciones';
 import { ordenMeses } from '../../constans';
 
 function ReportesPage() {
@@ -33,17 +34,7 @@ function ReportesPage() {
 
   // Consultar convenios disponibles según el año seleccionado
   useEffect(() => {
-    if (anio) {
-      obtenerConveniosPorAnio(anio)
-        .then(data => {
-          setConvenios(data);
-          setConvenio(''); // Limpiar selección anterior
-        })
-        .catch(() => setConvenios([]));
-    } else {
-      setConvenios([]);
-      setConvenio('');
-    }
+    cargarConveniosPorAnio(anio, setConvenios, setConvenio);
   }, [anio]);
 
   // Cargar establecimientos desde localStorage al montar el componente
@@ -99,18 +90,18 @@ function ReportesPage() {
           }));
         } else {
           // 1. Buscar dependientes del establecimiento seleccionado
-          const dependientesResp = await axios.get(`/api/establecimientos/dependientes/${establecimientoSeleccionado}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          // Armar lista de establecimientos a consultar (el principal + dependientes)
-          const dependientes = dependientesResp.data;
+        const dependientesResp = await axios.get(`/api/establecimientos/dependientes/${establecimientoSeleccionado}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        // Armar lista de establecimientos a consultar (el principal + dependientes)
+        const dependientes = dependientesResp.data;
           todosEstablecimientos = [
-            { 
-              id: establecimientoSeleccionado, 
-              nombre: establecimientos.find(e => String(e.id) === String(establecimientoSeleccionado))?.nombre || establecimientoSeleccionado 
-            },
-            ...dependientes.map(dep => ({ id: dep.id, nombre: dep.nombre }))
-          ];
+          { 
+            id: establecimientoSeleccionado, 
+            nombre: establecimientos.find(e => String(e.id) === String(establecimientoSeleccionado))?.nombre || establecimientoSeleccionado 
+          },
+          ...dependientes.map(dep => ({ id: dep.id, nombre: dep.nombre }))
+        ];
         }
 
         // 2. Consultar resultados por cada establecimiento
@@ -159,16 +150,16 @@ function ReportesPage() {
     // Para cada indicador, suma los resultados ponderados de todos los establecimientos
     const totalesPorIndicador = {};
     let sumaTotal = 0;
-    indicadores.forEach(indicador => {
+      indicadores.forEach(indicador => {
       let total = 0;
       Object.values(resultadosPorEstablecimiento).forEach(res => {
         if (res) {
           Object.values(res).forEach(arr => {
             const formulas = arr.filter(f => f.indicador === indicador);
             
-            if (formulas.length > 0) {
+          if (formulas.length > 0) {
               const promedio = formulas.reduce((acc, f) => acc + (f.resultado || 0), 0) / formulas.length;
-              const peso = formulas[0].peso_final || 0;
+            const peso = formulas[0].peso_final || 0;
               const calculo = peso * promedio; // Convertir a decimal
               total = Math.max(total, calculo);
             }
@@ -188,7 +179,7 @@ function ReportesPage() {
       totalesPorIndicador,
       sumaTotal
     };
-  };
+    };
 
   const datosGraficos = calcularDatosGraficos();
 
@@ -235,13 +226,13 @@ function ReportesPage() {
         </div>
         {/* Indicador de carga */}
         {loadingResultados && (
-          <div className="mt-3" style={{ display: 'flex', alignItems: 'center' }}>
-            <Spinner animation="border" role="status" size="sm">
-              <span className="visually-hidden">Cargando...</span>
-            </Spinner>
-            <span className="ms-2">Cargando resultados...</span>
-          </div>
-        )}
+        <div className="mt-3" style={{ display: 'flex', alignItems: 'center' }}>
+          <Spinner animation="border" role="status" size="sm">
+            <span className="visually-hidden">Cargando...</span>
+          </Spinner>
+          <span className="ms-2">Cargando resultados...</span>
+        </div>
+      )}
       </div>
 
       {/* Panel de gráficos a la derecha */}
@@ -255,6 +246,10 @@ function ReportesPage() {
                 meses={datosGraficos.meses}
                 onPorcentajeAcumuladoChange={setPorcentajeAcumulado}
               />
+              {/* Tabla de proyecciones */}
+              <div style={{ marginTop: '32px' }}>
+                <TablaProyecciones />
+              </div>
               <div style={{ display: 'flex', gap: '32px' }}>
                 <div style={{ flex: 1 }}>
                   <TablaPesos
@@ -272,8 +267,8 @@ function ReportesPage() {
             </>
           ) : (
             Object.keys(resultadosPorEstablecimiento || {})
-              .filter(nombreEst => nombreEst && resultadosPorEstablecimiento[nombreEst])
-              .map(nombreEst => (
+          .filter(nombreEst => nombreEst && resultadosPorEstablecimiento[nombreEst])
+          .map(nombreEst => (
                 <GraficoEstablecimiento
                   key={nombreEst}
                   nombreEst={nombreEst}
@@ -287,21 +282,24 @@ function ReportesPage() {
 
         {/* Gráfico de totales y tabla de prestaciones - solo visible cuando hay datos */}
         {datosGraficos && (
-          <div style={{ display: 'flex', gap: '32px' }}>
-            <div style={{ flex: 1 }}>
-              <GraficoTotales
-                indicadores={datosGraficos.indicadores}
-                totalesPorIndicador={datosGraficos.totalesPorIndicador}
-                sumaTotal={datosGraficos.sumaTotal}
-              />
+          <>
+            <div style={{ display: 'flex', gap: '32px' }}>
+              <div style={{ flex: 1 }}>
+                <GraficoTotales
+                  indicadores={datosGraficos.indicadores}
+                  totalesPorIndicador={datosGraficos.totalesPorIndicador}
+                  sumaTotal={datosGraficos.sumaTotal}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <TablaPrestaciones
+                  resultados={resultadosPorEstablecimiento}
+                  indicadores={datosGraficos.indicadores}
+                />
+              </div>
             </div>
-            <div style={{ flex: 1 }}>
-              <TablaPrestaciones
-                resultados={resultadosPorEstablecimiento}
-                indicadores={datosGraficos.indicadores}
-              />
-            </div>
-          </div>
+            
+          </>
         )}
       </div>
     </div>

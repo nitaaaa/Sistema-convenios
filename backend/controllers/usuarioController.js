@@ -1,29 +1,45 @@
+//const { cargarConveniosPorAnio } = require('../../frontend/src/services/convenioService');
 const { crearUsuario, editarUsuario, obtenerUsuarioPorId, listarUsuarios, buscarUsuarioPorCorreo, buscarUsuariosPorEstablecimiento, buscarEstablecimientosPorUsuario } = require('../models/usuarioModel');
 
 // Crear usuario
 async function crearUsuarioController(req, res) {
-  const { nombres, apellidoPaterno, apellidoMaterno, rut, correo, establecimiento } = req.body;
-  if (!nombres || !apellidoPaterno || !apellidoMaterno || !rut || !correo || !establecimiento) {
-    return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+  // Permitir ambos formatos de nombre de campo
+  const nombres = req.body.nombres;
+  const apellidoPaterno = req.body.apellidoPaterno || req.body.apellido_paterno;
+  const apellidoMaterno = req.body.apellidoMaterno || req.body.apellido_materno;
+  const rut = req.body.rut;
+  const correo = req.body.correo;
+  const establecimiento = req.body.establecimiento;
+  const contrasena = req.body.contrasena;
+
+  
+  if (!nombres || !apellidoPaterno || !apellidoMaterno || !rut || !correo) {
+    return res.status(400).json({ message: 'Los campos nombres, apellido paterno, apellido materno, RUT y correo son obligatorios' });
   }
   try {
-    await crearUsuario({ nombres, apellidoPaterno, apellidoMaterno, rut, correo, establecimiento });
+    await crearUsuario({ nombres, apellidoPaterno, apellidoMaterno, rut, correo, establecimiento, contrasena });
     res.status(201).json({ message: 'Usuario creado exitosamente' });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Error al crear el usuario' });
   }
 }
 
 // Editar usuario
 async function editarUsuarioController(req, res) {
-  const { nombres, apellidoPaterno, apellidoMaterno, rut, correo, establecimiento } = req.body;
-  const { id } = req.params;
-  if (!nombres || !apellidoPaterno || !apellidoMaterno || !rut || !correo || !establecimiento) {
-    return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+  const nombres = req.body.nombres;
+  const apellido_paterno = req.body.apellido_paterno;
+  const apellido_materno = req.body.apellido_materno;
+  const rut = req.body.rut;
+  const correo = req.body.correo;
+  const establecimiento = req.body.establecimiento;
+  const suspendido = req.body.suspendido;
+
+  if (!nombres || !apellido_paterno || !apellido_materno || !rut || !correo) {
+    return res.status(400).json({ message: 'Los campos nombres, apellido paterno, apellido materno, RUT y correo son obligatorios' });
   }
+  
   try {
-    await editarUsuario(id, { nombres, apellidoPaterno, apellidoMaterno, rut, correo, establecimiento });
+    await editarUsuario({ nombres, apellido_paterno, apellido_materno, rut, correo, establecimiento, suspendido });
     res.status(200).json({ message: 'Usuario actualizado exitosamente' });
   } catch (error) {
     console.error(error);

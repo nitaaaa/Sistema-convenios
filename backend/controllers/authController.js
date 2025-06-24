@@ -1,7 +1,8 @@
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
+import { JWT_EXPIRATION } from '../../shared/constants.js';
 // Aquí podrías agregar lógica para conectarte con el servicio de Microsoft
 
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
   const { email, password } = req.body;
   
   // Aquí iría la validación tradicional, pero para Outlook/Microsoft haremos la integración OAuth.
@@ -12,6 +13,6 @@ exports.login = async (req, res) => {
   
   // Lógica de validación de contraseña y usuario...
   // Si se valida, se genera un token JWT:
-  const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: JWT_EXPIRATION });
   res.json({ token });
 };
