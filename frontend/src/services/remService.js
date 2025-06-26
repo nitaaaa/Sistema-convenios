@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export const subirRemArchivos = async (archivos) => {
   const formData = new FormData();
   archivos.forEach((archivo) => {
@@ -7,7 +9,7 @@ export const subirRemArchivos = async (archivos) => {
   });
   const token = localStorage.getItem('authToken');
   try {
-    const response = await axios.post(`/api/rem/subir`, formData, {
+    const response = await axios.post(`${API_URL}/rem/subir`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         Authorization: `Bearer ${token}`,
@@ -20,5 +22,22 @@ export const subirRemArchivos = async (archivos) => {
       throw error.response.data;
     }
     throw error;
+  }
+};
+
+export const obtenerArchivosRem = async (establecimientoId, mes, ano) => {
+  const token = localStorage.getItem('authToken');
+  try {
+    const response = await axios.get(`${API_URL}/rem/archivos`, {
+      headers: { Authorization: `Bearer ${token}` },
+      params: {
+        establecimientoId: establecimientoId || '',
+        mes: mes || '',
+        ano: ano || ''
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al obtener los archivos REM');
   }
 };  

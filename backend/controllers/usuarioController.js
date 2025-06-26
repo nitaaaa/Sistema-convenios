@@ -1,5 +1,5 @@
 //const { cargarConveniosPorAnio } = require('../../frontend/src/services/convenioService');
-const { crearUsuario, editarUsuario, obtenerUsuarioPorId, listarUsuarios, buscarUsuarioPorCorreo, buscarUsuariosPorEstablecimiento, buscarEstablecimientosPorUsuario } = require('../models/usuarioModel');
+const { crearUsuario, editarUsuario, obtenerUsuarioPorId, listarUsuarios, buscarUsuarioPorCorreo, buscarUsuariosPorEstablecimiento, buscarEstablecimientosPorUsuario, restablecerContrasena } = require('../models/usuarioModel');
 
 // Crear usuario
 async function crearUsuarioController(req, res) {
@@ -113,6 +113,27 @@ async function buscarComunaDelUsuarioController(req, res) {
   }
 }
 
+// Restablecer contraseña de usuario
+async function restablecerContrasenaController(req, res) {
+  const { rut } = req.params;
+  const { nuevaContrasena } = req.body;
+
+  if (!nuevaContrasena || nuevaContrasena.length < 8) {
+    return res.status(400).json({ message: 'La nueva contraseña debe tener al menos 8 caracteres' });
+  }
+
+  try {
+    await restablecerContrasena(rut, nuevaContrasena);
+    res.status(200).json({ message: 'Contraseña restablecida exitosamente' });
+  } catch (error) {
+    console.error(error);
+    if (error.message === 'Usuario no encontrado') {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    res.status(500).json({ message: 'Error al restablecer la contraseña' });
+  }
+}
+
 module.exports = {
   crearUsuarioController,
   editarUsuarioController,
@@ -120,5 +141,6 @@ module.exports = {
   listarUsuariosController,
   buscarUsuarioPorCorreoController,
   buscarEstablecimientosPorUsuarioController,
-  buscarComunaDelUsuarioController
+  buscarComunaDelUsuarioController,
+  restablecerContrasenaController
 }; 

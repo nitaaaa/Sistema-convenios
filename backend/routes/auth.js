@@ -2,6 +2,8 @@ const express = require('express')
 const passport = require('passport')
 const jwt = require('jsonwebtoken')
 const { OIDCStrategy } = require('passport-azure-ad')
+const { autenticarUsuario } = require('../models/usuarioModel')
+const { JWT_EXPIRATION } = require('../../shared/constants.js')
 
 const router = express.Router()
 
@@ -37,9 +39,58 @@ router.get('/microsoft/callback', passport.authenticate('azuread-openidconnect',
   const token = jwt.sign({
     email: user._json.preferred_username,
     nombre: user.displayName
-  }, process.env.JWT_SECRET, { expiresIn: '1h' })
+  }, process.env.JWT_SECRET, { expiresIn: JWT_EXPIRATION })
 
   res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}`)
 })
+
+router.post('/login', async (req, res) => {
+  try {
+    const { rut, contrasena } = req.body;
+    
+    if (!rut || !contrasena) {
+      return res.status(400).json({ 
+        message: 'RUT y contraseña son requeridos' 
+      });
+    }
+    console.log('rut :', rut, 'contrasena :', contrasena)
+    // Autenticar usuario
+    const usuario = await autenticarUsuario(rut, contrasena);
+    console.log('usuario :', usuario)
+    if (!usuario) {
+      return res.status(401).json({ 
+        message: 'RUT o contraseña incorrectos, o usuario suspendido' 
+      });
+    }
+    
+    // Generar token JWT
+    const token = jwt.sign({
+      email: usuario.correo,
+      nombre: `${usuario.nombres} ${usuario.apellido_paterno}`,
+      rut: usuario.rut
+    }, process.env.JWT_SECRET, { expiresIn: JWT_EXPIRATION });
+    
+    // Preparar datos del usuario para el frontend
+    const userData = {
+      nombre: usuario.nombres,
+      apellidoPaterno: usuario.apellido_paterno,
+      apellidoMaterno: usuario.apellido_materno,
+      rut: usuario.rut,
+      correo: usuario.correo,
+    };
+    
+    res.json({
+      token,
+      user: userData,
+      message: 'Login exitoso'
+    });
+    
+  } catch (error) {
+    console.error('Error en login:', error);
+    res.status(500).json({ 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
 
 module.exports = router

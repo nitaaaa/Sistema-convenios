@@ -8,7 +8,8 @@ const {
   listarUsuariosController,
   buscarUsuarioPorCorreoController,
   buscarEstablecimientosPorUsuarioController,
-  buscarComunaDelUsuarioController
+  buscarComunaDelUsuarioController,
+  restablecerContrasenaController
 } = require('../controllers/usuarioController');
 
 // POST /api/usuarios
@@ -31,5 +32,8 @@ router.get('/establecimientos/:rut', verifyToken, buscarEstablecimientosPorUsuar
 
 // GET /api/usuarios/comuna/:rut
 router.get('/comuna/:rut', verifyToken, buscarComunaDelUsuarioController);
+
+// PUT /api/usuarios/:rut/restablecer-contrasena
+router.put('/:rut/restablecer-contrasena', verifyToken, restablecerContrasenaController);
 
 module.exports = router;

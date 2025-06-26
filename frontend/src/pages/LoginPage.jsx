@@ -6,16 +6,15 @@ import logoMicrosoft from '../assets/Logo-Microsoft.png'
 import './LoginPage.css'
 import { EXPIRATION_TIME } from '../../constans';
 import { buscarUsuarioPorCorreo, buscarEstablecimientosPorUsuario } from '../services/usuarioService'
+import { formatRut } from '../utils/rutUtils'
+import { useAuth } from '../context/AuthContext'
 
-function guardarSesion(token, userData) {
-  localStorage.setItem('authToken', token);
-  localStorage.setItem('expiresAt', EXPIRATION_TIME);
-  localStorage.setItem('userData', JSON.stringify(userData));
-}
+const API_URL = import.meta.env.VITE_API_URL;
 
 function LoginPage() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [rut, setRut] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -32,37 +31,49 @@ function LoginPage() {
         try {
           // Usamos el token recibido para autenticarnos en la consulta
           const usuario = await buscarUsuarioPorCorreo(email, token)
-          const establecimientos = await buscarEstablecimientosPorUsuario(usuario.data.rut, token)
-          const idEstablecimientos = establecimientos.data.map(est => est.id);
-          guardarSesion(token, {
+          const userData = {
             nombre: usuario.data.nombres,
             apellidoPaterno: usuario.data.apellidoPaterno,
             apellidoMaterno: usuario.data.apellidoMaterno,
             rut: usuario.data.rut,
             correo: usuario.data.correo,
-            establecimientos: idEstablecimientos,
-          });
+          };
+          
+          // Guardar en localStorage y actualizar el contexto
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('expiresAt', EXPIRATION_TIME);
+          login(token, userData);
+          
           navigate('/reportes')
         } catch (err) {
           setError('El usuario no pertenece a la organización')
         }
       }
       validarUsuario()
-      
-      
-
     }
-  }, [location, navigate])
+  }, [location, navigate, login])
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     try {
-      const res = await axios.post('/api/auth/login', { email, password })
-      guardarSesion(res.data.token, res.data.user)
+      const res = await axios.post(`${API_URL}/auth/login`, { 
+        rut: rut, 
+        contrasena: password 
+      })
+      
+      // Guardar en localStorage y actualizar el contexto
+      localStorage.setItem('authToken', res.data.token);
+      localStorage.setItem('expiresAt', EXPIRATION_TIME);
+      login(res.data.token, res.data.user);
+      
       navigate('/reportes')
     } catch (err) {
-      setError('Usuario o contraseña incorrectos')
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message)
+      } else {
+        setError('Usuario o contraseña incorrectos')
+      }
     }
   }
 
@@ -78,7 +89,7 @@ function LoginPage() {
               type="text"
               className="form-control"
               value={rut}
-              onChange={e => setRut(e.target.value)}
+              onChange={e => setRut(formatRut(e.target.value))}
               required
             />
           </div>

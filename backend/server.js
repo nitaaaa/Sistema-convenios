@@ -10,6 +10,8 @@ const establecimientoRoutes = require('./routes/establecimientos')
 const comunasRoutes = require('./routes/comunas')
 const convenioRoutes = require('./routes/convenio')
 const remRoutes = require('./routes/rem')
+const resultadosCalculoRoutes = require('./routes/resultadosCalculo')
+const verifyToken = require('./middlewares/auth')
 
 
 
@@ -43,12 +45,14 @@ app.use(passport.initialize())
 
 // Rutas de autenticación
 app.use('/auth', authRoutes)
+app.use('/api/auth', authRoutes)
 app.use('/api/powerbi', powerbiRoutes)
 app.use('/api/usuarios', usuarioRoutes)
 app.use('/api/establecimientos', establecimientoRoutes)
 app.use('/api/comunas', comunasRoutes)
 app.use('/api/convenios', convenioRoutes)
-app.use('/api/rem', remRoutes)
+app.use('/api/rem', verifyToken, remRoutes)
+app.use('/api/resultados-calculo', verifyToken, resultadosCalculoRoutes)
 
 // Leer certificados SSL
 const httpsOptions = {

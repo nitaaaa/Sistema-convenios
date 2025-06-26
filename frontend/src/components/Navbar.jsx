@@ -57,6 +57,7 @@ function AppNavbar() {
             <NavDropdown title="Gestionar Usuarios" id="usuarios-dropdown">
               <NavDropdown.Item href="/usuarios/crear">Crear Usuario</NavDropdown.Item>
               <NavDropdown.Item href="/usuarios/editar">Editar Usuario</NavDropdown.Item>
+              <NavDropdown.Item href="/usuarios/restablecer-contrasena">Restablecer Contraseña</NavDropdown.Item>
             </NavDropdown>
 
             <NavDropdown title="Administrar" id="administrar-dropdown">

@@ -7,6 +7,7 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const { buscarUsuariosPorEstablecimiento } = require('../models/establecimientoModel');
+const { getEstablecimientosPorUsuario } = require('../controllers/establecimientosController');
 
 // Crear establecimiento
 router.post('/nuevo', verifyToken, async (req, res) => {
@@ -48,5 +49,8 @@ router.get('/dependientes/:id', verifyToken, getEstablecimientosDependientes);
 
 // Obtener datos de un establecimiento por su id
 router.get('/info/:id', verifyToken, require('../controllers/establecimientosController').getEstablecimientoPorId);
+
+// Obtener establecimientos por usuario
+router.get('/usuario/:rut', getEstablecimientosPorUsuario);
 
 module.exports = router; 

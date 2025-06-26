@@ -53,10 +53,55 @@ async function getRemByRuta(ruta) {
   return rem[0];
 }
 
+async function obtenerRemPorId(id) {
+  const [rem] = await db.execute('SELECT id, ruta, Establecimientos_id, mes, ano FROM rem WHERE id = ?', [id]);
+  return rem[0];
+}
+
+async function obtenerArchivosRemFiltrados(establecimientoId, mes, ano) {
+  let query = `
+    SELECT 
+      r.id,
+      r.ruta,
+      r.mes,
+      r.ano,
+      e.nombre as nombreEstablecimiento,
+      SUBSTRING_INDEX(REPLACE(r.ruta, '\\\\', '/'), '/', -1) as nombreArchivo
+    FROM rem r
+    INNER JOIN establecimientos e ON r.Establecimientos_id = e.id
+    WHERE 1=1
+  `;
+  
+  const params = [];
+  
+  // Agregar filtros solo si están proporcionados
+  if (establecimientoId && establecimientoId.trim() !== '') {
+    query += ' AND r.Establecimientos_id = ?';
+    params.push(establecimientoId);
+  }
+  
+  if (mes && mes.trim() !== '') {
+    query += ' AND r.mes = ?';
+    params.push(mes);
+  }
+  
+  if (ano && ano.trim() !== '') {
+    query += ' AND r.ano = ?';
+    params.push(ano);
+  }
+  
+  query += ' ORDER BY r.id DESC';
+
+  const [rows] = await db.execute(query, params);
+  return rows;
+}
+
 module.exports = {
   getComunas,
   getEstablecimientosPorComuna,
   guardarArchivoRem,
   registrarRem,
-  getRemByRuta
+  getRemByRuta,
+  obtenerArchivosRemFiltrados,
+  obtenerRemPorId
 }; 

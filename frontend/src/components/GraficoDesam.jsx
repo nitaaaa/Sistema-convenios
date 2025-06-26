@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import * as echarts from 'echarts';
 
 function GraficoDesam({ resultados, indicadores, meses, onPorcentajeAcumuladoChange }) {
-  console.log('Renderizando GraficoDesam');
+  
   
   const chartRef = useRef(null);
   const porcentajeAcumuladoRef = useRef([]);
@@ -11,13 +11,13 @@ function GraficoDesam({ resultados, indicadores, meses, onPorcentajeAcumuladoCha
 
   // Actualizar el callback ref cuando cambia
   useEffect(() => {
-    console.log('Efecto 1: Actualizando callbackRef');
+    
     callbackRef.current = onPorcentajeAcumuladoChange;
   }, [onPorcentajeAcumuladoChange]);
 
   // Memoizamos la función de cálculo de los valores
   const calcularValores = useCallback(() => {
-    console.log('Ejecutando calcularValores');
+    
     if (!resultados) return { valoresBarras: [], porcentajeAcumulado: [] };
 
     // Primero calculamos los acumulados de cada indicador por mes
@@ -64,14 +64,14 @@ function GraficoDesam({ resultados, indicadores, meses, onPorcentajeAcumuladoCha
       return Number(totalMes.toFixed(2));
     });
 
-    console.log('Valores calculados:', { valoresBarras, porcentajeAcumulado });
+    
     return { valoresBarras, porcentajeAcumulado };
   }, [resultados, indicadores, meses]);
 
   useEffect(() => {
-    console.log('Efecto 2: Iniciando efecto principal');
+    
     if (!chartRef.current || !resultados) {
-      console.log('Efecto 2: No hay resultados o chartRef');
+      
       return;
     }
 
@@ -98,11 +98,11 @@ function GraficoDesam({ resultados, indicadores, meses, onPorcentajeAcumuladoCha
 
       // Notificar el cambio en el porcentaje acumulado
       if (callbackRef.current && porcentajeAcumulado.length > 0) {
-        console.log('Efecto 2: Notificando cambio en porcentaje acumulado');
+        
         callbackRef.current(porcentajeAcumulado);
       }
     } else {
-      console.log('Efecto 2: Valores no han cambiado, omitiendo actualización');
+      
     }
 
     const option = {
@@ -168,7 +168,7 @@ function GraficoDesam({ resultados, indicadores, meses, onPorcentajeAcumuladoCha
     window.addEventListener('resize', handleResize);
 
     return () => {
-      console.log('Efecto 2: Limpieza');
+      
       window.removeEventListener('resize', handleResize);
       chart.dispose();
     };

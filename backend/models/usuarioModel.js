@@ -148,6 +148,75 @@ const buscarComunaDelUsuario = async (rutUsuario) => {
   return rows[0];
 };
 
+const autenticarUsuario = async (rut, contrasena) => {
+  const [rows] = await db.execute(
+    'SELECT * FROM usuarios WHERE rut = ? AND suspendido = 0',
+    [rut]
+  );
+  
+  if (rows.length === 0) {
+    return null; // Usuario no encontrado o suspendido
+  }
+  
+  const usuario = rows[0];
+  
+  // Verificar contraseña
+  if (!usuario.contrasena) {
+    return null; // Usuario sin contraseña (solo login con Microsoft)
+  }
+  
+  const contrasenaValida = await bcrypt.compare(contrasena, usuario.contrasena);
+  
+  if (!contrasenaValida) {
+    return null; // Contraseña incorrecta
+  }
+  
+  // Obtener establecimientos asociados
+  const [establecimientosRows] = await db.execute(
+    'SELECT Establecimientos_id FROM establecimientos_usuarios WHERE Usuarios_rut = ?',
+    [rut]
+  );
+  
+  const establecimientosIds = establecimientosRows.map(row => row.Establecimientos_id);
+  
+  return {
+    ...usuario,
+    establecimientos: establecimientosIds
+  };
+};
+
+const restablecerContrasena = async (rut, nuevaContrasena) => {
+  const connection = await db.getConnection();
+  await connection.beginTransaction();
+  
+  try {
+    // Encriptar nueva contraseña
+    const saltRounds = 10;
+    const contrasenaEncriptada = await bcrypt.hash(nuevaContrasena, saltRounds);
+
+    // Actualizar contraseña del usuario
+    const [result] = await connection.execute(
+      'UPDATE usuarios SET contrasena = ? WHERE rut = ?',
+      [contrasenaEncriptada, rut]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    // Confirmar transacción
+    await connection.commit();
+    return result;
+  } catch (error) {
+    // Revertir transacción en caso de error
+    await connection.rollback();
+    throw error;
+  } finally {
+    // Liberar conexión
+    connection.release();
+  }
+};
+
 module.exports = {
   crearUsuario,
   editarUsuario,
@@ -155,5 +224,7 @@ module.exports = {
   listarUsuarios,
   buscarUsuarioPorCorreo,
   buscarEstablecimientosPorUsuario,
-  buscarComunaDelUsuario
+  buscarComunaDelUsuario,
+  autenticarUsuario,
+  restablecerContrasena
 };

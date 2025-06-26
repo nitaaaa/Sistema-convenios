@@ -6,7 +6,9 @@ import ModificarConvenioPage from './pages/convenios/ModificarConvenioPage'
 import EliminarConvenioPage from './pages/convenios/EliminarConvenioPage'
 import CrearUsuarioPage from './pages/usuarios/CrearUsuarioPage'
 import EditarUsuarioPage from './pages/usuarios/EditarUsuarioPage'
+import RestablecerContrasenaPage from './pages/usuarios/RestablecerContrasenaPage'
 import SubirRemPage from './pages/rem/SubirRemPage'
+import VerRemPage from './pages/rem/VerRemPage'
 import CrearEstablecimientoPage from './pages/establecimientos/CrearEstablecimientoPage'
 import './App.css'
 import AppNavbar from './components/Navbar'
@@ -38,8 +40,10 @@ function AppContent() {
             {/* Usuarios */}
             <Route path="/usuarios/crear" element={<CrearUsuarioPage />} />
             <Route path="/usuarios/editar/" element={<EditarUsuarioPage />} />
+            <Route path="/usuarios/restablecer-contrasena" element={<RestablecerContrasenaPage />} />
             {/* REM */}
             <Route path="/rem/subir" element={<SubirRemPage />} />
+            <Route path="/rem/ver" element={<VerRemPage />} />
             {/* Establecimientos */}
             <Route path="/establecimientos/crear" element={<CrearEstablecimientoPage />} />
           </Route>

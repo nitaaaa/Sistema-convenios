@@ -3,7 +3,7 @@ import './ReportesPage.css'
 import { obtenerConveniosPorAnio, cargarConveniosPorAnio } from '../services/convenioService';
 import axios from 'axios';
 import { Spinner } from 'react-bootstrap';
-import { obtenerEstablecimientoPorId } from '../services/establecimientoService';
+import { obtenerEstablecimientoPorId, obtenerEstablecimientosPorUsuario } from '../services/establecimientoService';
 import { obtenerResultadosPorMes } from '../services/convenioService';
 import GraficoTotales from '../components/GraficoTotales';
 import GraficoEstablecimiento from '../components/GraficoEstablecimiento';
@@ -41,22 +41,14 @@ function ReportesPage() {
   // Obtiene los establecimientos asociados al usuario actual
   useEffect(() => {
     const userDataStr = localStorage.getItem('userData');
-    const establecimientosArr = [];
-    const fetchEstablecimientos = async (ids) => {
-      for (const id of ids) {
-        try {
-          const data = await obtenerEstablecimientoPorId(id);
-          establecimientosArr.push({ id: data.id, nombre: data.nombre });
-        } catch {}
-      }
-      setEstablecimientos(establecimientosArr);
-    };
     if (userDataStr) {
       try {
         const userData = JSON.parse(userDataStr);
-        const ids = Array.isArray(userData.establecimientos) ? userData.establecimientos : [];
-        if (ids.length > 0) {
-          fetchEstablecimientos(ids);
+        const rut = userData.rut;
+        if (rut) {
+          obtenerEstablecimientosPorUsuario(rut)
+            .then(establecimientos => setEstablecimientos(establecimientos))
+            .catch(() => setEstablecimientos([]));
         } else {
           setEstablecimientos([]);
         }
@@ -114,7 +106,6 @@ function ReportesPage() {
             resultados[est.nombre] = null;
           }
         }
-        console.log('resultados: ', resultados);
         setResultadosPorEstablecimiento(resultados);
       } catch (err) {
         setResultadosPorEstablecimiento(null);

@@ -1,4 +1,4 @@
-const rutUtils = (rut) => {
+const formatRut = (rut) => {
     // Si hay menos de 2 caracteres, devolver el valor sin formato
     if (rut.length < 2) {
         return rut;
@@ -64,4 +64,4 @@ const validarRut = (rut) => {
     return dv === dvEsperado;
 };
 
-export { rutUtils, validarRut };
+export { formatRut, validarRut };

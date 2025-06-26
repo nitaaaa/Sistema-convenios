@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const XLSX = require('xlsx');
-const { listarEstablecimientos, listarEstablecimientosPorComuna, listarEstablecimientosDependientes, obtenerEstablecimientoPorId, buscarEstablecimientoPorNombreYComuna } = require('../models/establecimientoModel');
+const { listarEstablecimientos, listarEstablecimientosPorComuna, listarEstablecimientosDependientes, obtenerEstablecimientoPorId, buscarEstablecimientoPorNombreYComuna, obtenerEstablecimientosPorUsuario } = require('../models/establecimientoModel');
 
 exports.getEstablecimientos = async (req, res) => {
   try {
@@ -22,6 +22,7 @@ exports.getEstablecimientosPorComuna = async (req, res) => {
   }
 };
 
+// Obtener establecimientos dependientes de un establecimiento
 exports.getEstablecimientosDependientes = async (req, res) => {
   const { id } = req.params;
   try {
@@ -58,5 +59,15 @@ exports.getEstablecimientoPorNombreYComuna = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error al obtener el establecimiento por nombre y comuna' });
+  }
+};
+
+exports.getEstablecimientosPorUsuario = async (req, res) => {
+  const { rut } = req.params;
+  try {
+    const establecimientos = await obtenerEstablecimientosPorUsuario(rut);
+    res.json(establecimientos);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener establecimientos del usuario' });
   }
 };

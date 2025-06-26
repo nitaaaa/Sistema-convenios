@@ -43,4 +43,14 @@ async function obtenerEstablecimientoPorId(id) {
   return rows[0];
 }
 
-module.exports = { crearEstablecimiento, listarEstablecimientos, listarEstablecimientosPorComuna, buscarEstablecimientoPorNombreYComuna, buscarUsuariosPorEstablecimiento, listarEstablecimientosDependientes, obtenerEstablecimientoPorId }; 
+async function obtenerEstablecimientosPorUsuario(rut) {
+  const [rows] = await db.execute(
+    `SELECT e.* FROM establecimientos e
+     INNER JOIN establecimientos_usuarios eu ON e.id = eu.Establecimientos_id
+     WHERE eu.Usuarios_rut = ?`,
+    [rut]
+  );
+  return rows;
+}
+
+module.exports = { crearEstablecimiento, listarEstablecimientos, listarEstablecimientosPorComuna, buscarEstablecimientoPorNombreYComuna, buscarUsuariosPorEstablecimiento, listarEstablecimientosDependientes, obtenerEstablecimientoPorId, obtenerEstablecimientosPorUsuario }; 

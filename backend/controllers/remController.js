@@ -1,6 +1,6 @@
 const XLSX = require('xlsx');
 const path = require('path');
-const { guardarArchivoRem, registrarRem, getRemByRuta } = require('../models/remModel');
+const { guardarArchivoRem, registrarRem, getRemByRuta, obtenerArchivosRemFiltrados, obtenerRemPorId } = require('../models/remModel');
 const {buscarEstablecimientoPorNombreYComuna } = require('../models/establecimientoModel');
 const { getFormulaIdsValidasPorFecha, getFormulaById, guardarResultadoCalculo } = require('../models/formulaCalculoModel');
 const { buscarComunaPorNombre } = require('../models/comunaModel');
@@ -193,4 +193,77 @@ exports.subirExcel = async (req, res) => {
       }
     }
   });
+};
+
+exports.obtenerArchivosRem = async (req, res) => {
+  try {
+    const { establecimientoId, mes, ano } = req.query;
+    
+    // Los parámetros son opcionales, no se requiere validación estricta
+    const archivos = await obtenerArchivosRemFiltrados(establecimientoId, mes, ano);
+    res.json(archivos);
+  } catch (error) {
+    console.error('Error al obtener archivos REM:', error);
+    res.status(500).json({ 
+      message: 'Error interno del servidor al obtener archivos REM' 
+    });
+  }
+};
+
+exports.descargarArchivoRem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ 
+        message: 'Se requiere el ID del archivo REM' 
+      });
+    }
+
+    // Obtener información del archivo REM
+    const rem = await obtenerRemPorId(id);
+    if (!rem) {
+      return res.status(404).json({ 
+        message: 'Archivo REM no encontrado' 
+      });
+    }
+
+    // Verificar que el archivo existe en el sistema de archivos
+    if (!fs.existsSync(rem.ruta)) {
+      return res.status(404).json({ 
+        message: 'El archivo físico no existe en el servidor' 
+      });
+    }
+
+    // Obtener el nombre del archivo para la descarga
+    const nombreArchivo = path.basename(rem.ruta);
+    const extension = path.extname(rem.ruta).toLowerCase();
+    
+    // Configurar el Content-Type según la extensión
+    let contentType = 'application/octet-stream';
+    switch (extension) {
+      case '.xlsx':
+        contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        break;
+      case '.xls':
+        contentType = 'application/vnd.ms-excel';
+        break;
+      case '.xlsm':
+        contentType = 'application/vnd.ms-excel.sheet.macroEnabled.12';
+        break;
+    }
+    
+    // Configurar headers para la descarga
+    res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
+    res.setHeader('Content-Type', contentType);
+    
+    // Enviar el archivo
+    res.sendFile(rem.ruta);
+    
+  } catch (error) {
+    console.error('Error al descargar archivo REM:', error);
+    res.status(500).json({ 
+      message: 'Error interno del servidor al descargar el archivo' 
+    });
+  }
 }; 

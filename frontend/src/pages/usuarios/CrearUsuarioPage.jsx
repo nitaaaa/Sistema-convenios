@@ -27,7 +27,7 @@ function CrearUsuarioPage() {
   }
 
   return (
-    <Container className="crear-usuario-container mt-4">
+    <Container className="crear-usuario-container mt-4" >
       <h2>Crear Usuario</h2>
       {error && <div className="alert alert-danger">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}

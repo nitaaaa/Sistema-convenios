@@ -56,3 +56,14 @@ export const buscarEstablecimientosPorUsuario = async (rut, token) => {
     },
   })
 }
+
+export const restablecerContrasena = async (rut, nuevaContrasena, token) => {
+  return axios.put(`/api/usuarios/${encodeURIComponent(rut)}/restablecer-contrasena`, 
+    { nuevaContrasena }, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+}

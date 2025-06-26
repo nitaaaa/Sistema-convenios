@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { Form, Button, Alert, Row, Col } from 'react-bootstrap'
 import './UsuarioForm.css'
 import cleanIcon from '../assets/clean.png'
-import { rutUtils, validarRut } from '../utils/rutUtils'
+import { formatRut, validarRut } from '../utils/rutUtils'
 import { obtenerTodosLosEstablecimientosPM } from '../services/establecimientoService'
+import ContrasenaForm from './ContrasenaForm'
 
 // Función para validar contraseña según las restricciones
 const validarContrasena = (contrasena) => {
@@ -54,9 +55,6 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
   const [success, setSuccess] = useState('')
   const [establecimientos, setEstablecimientos] = useState([])
   const [selectedEstablecimientos, setSelectedEstablecimientos] = useState([])
-  const [validacionContrasena, setValidacionContrasena] = useState({ esValida: false, errores: [] })
-  const [mostrarContrasena, setMostrarContrasena] = useState(false)
-  const [mostrarConfirmarContrasena, setMostrarConfirmarContrasena] = useState(false)
 
   // Cargar establecimientos de Puerto Montt al montar el componente
   useEffect(() => {
@@ -104,13 +102,13 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
     }
   }, [initialData])
 
-  // Formatear RUT y validar contraseña en tiempo real
+  // Formatear RUT
   const handleChange = (e) => {
     const { name, value } = e.target
     
     // Aplicar formato RUT solo al campo rut
     if (name === 'rut') {
-      const formattedRut = rutUtils(value)
+      const formattedRut = formatRut(value)
       setFormData(prev => ({
         ...prev,
         [name]: formattedRut
@@ -120,12 +118,6 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
         ...prev,
         [name]: value
       }))
-    }
-    
-    // Validar contraseña en tiempo real
-    if (name === 'contrasena') {
-      const validacion = validarContrasena(value)
-      setValidacionContrasena(validacion)
     }
   }
 
@@ -170,14 +162,6 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
         establecimiento: ''
       }))
     }
-  }
-
-  const toggleMostrarContrasena = () => {
-    setMostrarContrasena(!mostrarContrasena)
-  }
-
-  const toggleMostrarConfirmarContrasena = () => {
-    setMostrarConfirmarContrasena(!mostrarConfirmarContrasena)
   }
 
   const handleSubmit = async (e) => {
@@ -244,9 +228,6 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
       suspendido: false
     })
     setSelectedEstablecimientos([])
-    setValidacionContrasena({ esValida: false, errores: [] })
-    setMostrarContrasena(false)
-    setMostrarConfirmarContrasena(false)
     setError('')
     setSuccess('')
   }
@@ -311,60 +292,21 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
           </Col>
         </Row>
 
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Correo</Form.Label>
-              <Form.Control
-                type="email"
-                name="correo"
-                value={formData.correo}
-                onChange={handleChange}
-                required
-              />
-              <Form.Text className="text-muted">
-                Debe ser un correo del dominio @saludpm.cl
-              </Form.Text>
-            </Form.Group>
-          </Col>
-          {modo === "crear" && (
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Contraseña</Form.Label>
-                <div className="position-relative">
-                  <Form.Control
-                    type={mostrarContrasena ? "text" : "password"}
-                    name="contrasena"
-                    value={formData.contrasena}
-                    onChange={handleChange}
-                    required
-                    className={formData.contrasena && (validacionContrasena.esValida ? 'is-valid' : 'is-invalid')}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-link position-absolute"
-                    style={{ right: '20px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, border: 'none', background: 'none' }}
-                    onClick={toggleMostrarContrasena}
-                    tabIndex="-1"
-                  >
-                    {mostrarContrasena ? (
-                      <span style={{ fontSize: '1.2rem'}}>👁</span>
-                    ) : (
-                      <span style={{ fontSize: '1.2rem'}}>🔒</span>
-                    )}
-                  </button>
-                </div>
-                {formData.contrasena && (
-                  <div className={`mt-2 ${validacionContrasena.esValida ? 'text-success' : 'text-danger'}`}>
-                    <small>
-                      {validacionContrasena.esValida ? '✓ Contraseña válida' : '✗ Contraseña inválida'}
-                    </small>
-                  </div>
-                )}
-              </Form.Group>
-            </Col>
-          )}
-          {modo === "editar" && (
+        {/* Campos de contraseña solo en modo crear */}
+        {modo === "crear" && (
+          <ContrasenaForm
+            contrasena={formData.contrasena}
+            setContrasena={(value) => setFormData(prev => ({ ...prev, contrasena: value }))}
+            confirmarContrasena={formData.confirmarContrasena}
+            setConfirmarContrasena={(value) => setFormData(prev => ({ ...prev, confirmarContrasena: value }))}
+            mostrarValidacion={true}
+            minLength={8}
+            requerirConfirmacion={true}
+          />
+        )}
+
+        <Row>    
+          
             <Col md={6}>
               <Form.Group className="mb-3">
                 <Form.Label>Establecimientos</Form.Label>
@@ -398,7 +340,22 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
                 )}
               </Form.Group>
             </Col>
-          )}
+            <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Correo</Form.Label>
+              <Form.Control
+                type="email"
+                name="correo"
+                value={formData.correo}
+                onChange={handleChange}
+                required
+              />
+              <Form.Text className="text-muted">
+                Debe ser un correo del dominio @saludpm.cl
+              </Form.Text>
+            </Form.Group>
+          </Col>
+          
         </Row>
 
         {/* Checkbox de Suspendido solo en modo editar */}
@@ -425,87 +382,9 @@ function UsuarioForm({ initialData = {}, onSubmit, modo = "crear" }) {
           </Row>
         )}
 
-        {/* Campos de contraseña solo en modo crear */}
-        {modo === "crear" && (
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Confirmar Contraseña</Form.Label>
-                <div className="position-relative">
-                  <Form.Control
-                    type={mostrarConfirmarContrasena ? "text" : "password"}
-                    name="confirmarContrasena"
-                    value={formData.confirmarContrasena}
-                    onChange={handleChange}
-                    required
-                    className={formData.confirmarContrasena && (formData.contrasena === formData.confirmarContrasena ? 'is-valid' : 'is-invalid')}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-link position-absolute"
-                    style={{ right: '20px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, border: 'none', background: 'none' }}
-                    onClick={toggleMostrarConfirmarContrasena}
-                    tabIndex="-1"
-                  >
-                    {mostrarConfirmarContrasena ? (
-                      <span style={{ fontSize: '1.2rem' }}>👁</span>
-                    ) : (
-                      <span style={{ fontSize: '1.2rem' }}>🔒</span>
-                    )}
-                  </button>
-                </div>
-                {formData.confirmarContrasena && (
-                  <div className={`mt-2 ${formData.contrasena === formData.confirmarContrasena ? 'text-success' : 'text-danger'}`}>
-                    <small>
-                      {formData.contrasena === formData.confirmarContrasena ? '✓ Las contraseñas coinciden' : '✗ Las contraseñas no coinciden'}
-                    </small>
-                  </div>
-                )}
-                <Form.Text className="text-muted">
-                  <ul>
-                    <li>Mínimo 8 caracteres</li>
-                    <li>Al menos una mayúscula</li>
-                    <li>Al menos un número</li>
-                    <li>Al menos un carácter especial ej: !@#$%^&*?.-_=</li>
-                  </ul>
-                </Form.Text>
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Establecimientos</Form.Label>
-                <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #ced4da', borderRadius: '0.375rem', padding: '10px', backgroundColor: 'white' }}>
-                  <Form.Check
-                    type="checkbox"
-                    id="select-all-establecimientos"
-                    label="Seleccionar todos"
-                    checked={selectedEstablecimientos.length === establecimientos.length && establecimientos.length > 0}
-                    onChange={handleSelectAllEstablecimientos}
-                    className="mb-2"
-                  />
-                  <hr className="my-2" />
-                  {establecimientos.map(est => (
-                    <Form.Check
-                      key={est.id}
-                      type="checkbox"
-                      id={`est-${est.id}`}
-                      label={est.nombre}
-                      value={est.id}
-                      checked={selectedEstablecimientos.includes(est.id.toString())}
-                      onChange={handleEstablecimientoChange}
-                      className="mb-2"
-                    />
-                  ))}
-                </div>
-                {selectedEstablecimientos.length === 0 && (
-                  <Form.Text className="text-danger">
-                    * Debe seleccionar al menos un establecimiento
-                  </Form.Text>
-                )}
-              </Form.Group>
-            </Col>
-          </Row>
-        )}
+        
+
+        
 
         <div className="d-flex gap-2 justify-content-center">
           <Button variant="primary" type="submit">

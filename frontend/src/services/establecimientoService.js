@@ -20,4 +20,16 @@ export const obtenerTodosLosEstablecimientosPM = async (comunaId = 1) => { //PM 
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Error al obtener los establecimientos');
   }
+};
+
+export const obtenerEstablecimientosPorUsuario = async (rut) => {
+  const token = localStorage.getItem('authToken');
+  try {
+    const response = await axios.get(`${API_URL}/establecimientos/usuario/${rut}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al obtener los establecimientos del usuario');
+  }
 }; 
