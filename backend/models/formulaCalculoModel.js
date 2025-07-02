@@ -70,6 +70,15 @@ async function guardarResultadoCalculo(remId, formulaId, resultado, valor_celda)
   return result;
 }
 
+async function eliminarResultadosPorIndicador(indicadorId, connection = db) {
+  const [result] = await connection.execute(`
+    DELETE rc FROM resultados_calculo rc
+    INNER JOIN formula_calculo fc ON rc.formula_calculo_id = fc.id
+    WHERE fc.Indicadores_id = ?
+  `, [indicadorId]);
+  return result;
+}
+
 module.exports = {
   crearFormulaCalculo,
   getFormulasPorIndicador,
@@ -78,5 +87,6 @@ module.exports = {
   getFormulaIdsAplicadasPorRem,
   getFormulaIdsValidasPorFecha,
   getFormulaById,
-  guardarResultadoCalculo
+  guardarResultadoCalculo,
+  eliminarResultadosPorIndicador
 }; 

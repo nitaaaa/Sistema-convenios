@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/auth');
 const { createConvenio } = require('../controllers/convenioController');
-const { obtenerConveniosPorAnio, obtenerConvenioPorId, actualizarConvenio } = require('../controllers/convenioController');
+const { obtenerConveniosPorAnio, obtenerConvenioPorId, actualizarConvenio, eliminarConvenioController } = require('../controllers/convenioController');
 const { componentesPorConvenio, indicadoresPorComponente, formulasPorIndicador, calcularResultadosPorMes, getFechasValidez } = require('../controllers/convenioController');
 
 // Crear convenio
@@ -16,6 +16,9 @@ router.get('/:convenioId', verifyToken, obtenerConvenioPorId);
 
 // Actualizar convenio
 router.put('/:convenioId', verifyToken, actualizarConvenio);
+
+// Eliminar convenio
+router.delete('/:convenioId', verifyToken, eliminarConvenioController);
 
 // Obtener fechas de validez de un convenio
 router.get('/:convenioId/fechas', verifyToken, getFechasValidez);

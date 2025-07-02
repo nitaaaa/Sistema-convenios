@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/auth');
 const { crearEstablecimiento } = require('../models/establecimientoModel');
-const { subirExcel, getEstablecimientos, getEstablecimientosPorComuna, getEstablecimientosDependientes } = require('../controllers/establecimientosController');
+const { subirExcel, getEstablecimientos, getEstablecimientosPorComuna, getEstablecimientosDependientes, actualizarEstablecimiento, eliminarEstablecimiento } = require('../controllers/establecimientosController');
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -52,5 +52,11 @@ router.get('/info/:id', verifyToken, require('../controllers/establecimientosCon
 
 // Obtener establecimientos por usuario
 router.get('/usuario/:rut', getEstablecimientosPorUsuario);
+
+// Actualizar establecimiento
+router.put('/:id', verifyToken, actualizarEstablecimiento);
+
+// Eliminar establecimiento
+router.delete('/:id', verifyToken, eliminarEstablecimiento);
 
 module.exports = router; 

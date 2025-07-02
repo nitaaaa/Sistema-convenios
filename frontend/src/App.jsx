@@ -10,6 +10,8 @@ import RestablecerContrasenaPage from './pages/usuarios/RestablecerContrasenaPag
 import SubirRemPage from './pages/rem/SubirRemPage'
 import VerRemPage from './pages/rem/VerRemPage'
 import CrearEstablecimientoPage from './pages/establecimientos/CrearEstablecimientoPage'
+import EditarEstablecimientoPage from './pages/establecimientos/EditarEstablecimientoPage'
+import EliminarEstablecimientoPage from './pages/establecimientos/EliminarEstablecimientoPage'
 import './App.css'
 import AppNavbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -46,6 +48,8 @@ function AppContent() {
             <Route path="/rem/ver" element={<VerRemPage />} />
             {/* Establecimientos */}
             <Route path="/establecimientos/crear" element={<CrearEstablecimientoPage />} />
+            <Route path="/establecimientos/editar" element={<EditarEstablecimientoPage />} />
+            <Route path="/establecimientos/eliminar" element={<EliminarEstablecimientoPage />} />
           </Route>
         </Routes>
       </main>

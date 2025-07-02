@@ -53,10 +53,10 @@ router.post('/login', async (req, res) => {
         message: 'RUT y contraseña son requeridos' 
       });
     }
-    console.log('rut :', rut, 'contrasena :', contrasena)
+    
     // Autenticar usuario
     const usuario = await autenticarUsuario(rut, contrasena);
-    console.log('usuario :', usuario)
+    
     if (!usuario) {
       return res.status(401).json({ 
         message: 'RUT o contraseña incorrectos, o usuario suspendido' 

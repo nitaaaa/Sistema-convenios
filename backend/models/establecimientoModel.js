@@ -53,4 +53,52 @@ async function obtenerEstablecimientosPorUsuario(rut) {
   return rows;
 }
 
-module.exports = { crearEstablecimiento, listarEstablecimientos, listarEstablecimientosPorComuna, buscarEstablecimientoPorNombreYComuna, buscarUsuariosPorEstablecimiento, listarEstablecimientosDependientes, obtenerEstablecimientoPorId, obtenerEstablecimientosPorUsuario }; 
+async function actualizarEstablecimiento(id, nombre, establecimientoPadreId = null) {
+  const [result] = await db.execute(
+    'UPDATE establecimientos SET nombre = ?, establecimiento_id = ? WHERE id = ?',
+    [nombre, establecimientoPadreId, id]
+  );
+  return result;
+}
+
+async function eliminarEstablecimiento(id) {
+  // Verificar si el establecimiento tiene dependientes
+  const [dependientes] = await db.execute(
+    'SELECT COUNT(*) as count FROM establecimientos WHERE establecimiento_id = ?',
+    [id]
+  );
+  
+  if (dependientes[0].count > 0) {
+    throw new Error('No se puede eliminar el establecimiento porque tiene establecimientos dependientes');
+  }
+  
+  // Verificar si el establecimiento tiene usuarios asociados
+  const [usuarios] = await db.execute(
+    'SELECT COUNT(*) as count FROM establecimientos_usuarios WHERE Establecimientos_id = ?',
+    [id]
+  );
+  
+  if (usuarios[0].count > 0) {
+    throw new Error('No se puede eliminar el establecimiento porque tiene usuarios asociados');
+  }
+  
+  // Verificar si el establecimiento tiene archivos REM asociados
+  const [rem] = await db.execute(
+    'SELECT COUNT(*) as count FROM rem WHERE Establecimientos_id = ?',
+    [id]
+  );
+  
+  if (rem[0].count > 0) {
+    throw new Error('No se puede eliminar el establecimiento porque tiene archivos REM asociados');
+  }
+  
+  // Si pasa todas las validaciones, eliminar el establecimiento
+  const [result] = await db.execute(
+    'DELETE FROM establecimientos WHERE id = ?',
+    [id]
+  );
+  
+  return result;
+}
+
+module.exports = { crearEstablecimiento, listarEstablecimientos, listarEstablecimientosPorComuna, buscarEstablecimientoPorNombreYComuna, buscarUsuariosPorEstablecimiento, listarEstablecimientosDependientes, obtenerEstablecimientoPorId, obtenerEstablecimientosPorUsuario, actualizarEstablecimiento, eliminarEstablecimiento }; 

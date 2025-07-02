@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SESSION_DURATION, MAX_SESSION_TIME, WARNING_TIME } from '../../../shared/constants';
+import { SESSION_DURATION, MAX_SESSION_TIME, WARNING_TIME } from '../../constans';
 
 const useSessionTimeout = () => {
   const navigate = useNavigate();

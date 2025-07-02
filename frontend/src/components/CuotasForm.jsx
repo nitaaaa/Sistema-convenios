@@ -1,12 +1,55 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Form, Button, Row, Col, Table } from 'react-bootstrap'
 
 function CuotasForm({ cuotas = [], setCuotas, modo }) {
+  
+  
   const [nuevaCuota, setNuevaCuota] = useState({
     fechaRendicion: '',
     porcentajes: [{ valor: '', descuento: '' }]
   })
   const [erroresCuotas, setErroresCuotas] = useState({})
+
+  // Cargar datos existentes cuando esté en modo modificar
+  useEffect(() => {
+    if (modo === "modificar" && Array.isArray(cuotas) && cuotas.length > 0) {
+      // Si hay cuotas existentes, no mostrar el formulario de nueva cuota
+      setNuevaCuota({
+        fechaRendicion: '',
+        porcentajes: [{ valor: '', descuento: '' }]
+      })
+    }
+  }, [modo, cuotas])
+
+  // Función para convertir fecha ISO a formato YYYY-MM-DD
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return ''
+    
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return ''
+      
+      const formattedDate = date.toISOString().split('T')[0]
+      return formattedDate
+    } catch (error) {
+      console.error('Error formateando fecha:', error)
+      return ''
+    }
+  }
+
+  // Función para convertir formato YYYY-MM-DD a ISO
+  const formatDateForBackend = (dateString) => {
+    if (!dateString) return ''
+    
+    try {
+      const date = new Date(dateString + 'T00:00:00')
+      const isoDate = date.toISOString()
+      return isoDate
+    } catch (error) {
+      console.error('Error convirtiendo fecha para backend:', error)
+      return ''
+    }
+  }
 
   const handleAddCuota = () => {
     if (nuevaCuota.fechaRendicion === '') {
@@ -19,9 +62,9 @@ function CuotasForm({ cuotas = [], setCuotas, modo }) {
 
     const porcentajesInvalidos = nuevaCuota.porcentajes.some(p =>
       p.valor === '' || p.descuento === '' ||
-      isNaN(parseFloat(p.valor)) || isNaN(parseFloat(p.descuento)) ||
-      parseFloat(p.valor) <= 0 || parseFloat(p.valor) > 100 ||
-      parseFloat(p.descuento) < 0 || parseFloat(p.descuento) > 100
+      isNaN(parseInt(p.valor)) || isNaN(parseInt(p.descuento)) ||
+      parseInt(p.valor) <= 0 || parseInt(p.valor) > 100 ||
+      parseInt(p.descuento) < 0 || parseInt(p.descuento) > 100
     )
 
     if (porcentajesInvalidos) {
@@ -32,8 +75,16 @@ function CuotasForm({ cuotas = [], setCuotas, modo }) {
       return
     }
 
-    const cuotasActualizadas = Array.isArray(cuotas) ? [...cuotas] : []
-    cuotasActualizadas.push({ ...nuevaCuota })
+    // Convertir la fecha al formato ISO para el backend
+    const cuotaParaAgregar = {
+      ...nuevaCuota,
+      fechaRendicion: formatDateForBackend(nuevaCuota.fechaRendicion)
+    }
+
+    // Obtener el valor actual de cuotas
+    const cuotasActuales = Array.isArray(cuotas) ? cuotas : []
+    const cuotasActualizadas = [...cuotasActuales]
+    cuotasActualizadas.push(cuotaParaAgregar)
     setCuotas(cuotasActualizadas)
 
     setNuevaCuota({
@@ -62,21 +113,75 @@ function CuotasForm({ cuotas = [], setCuotas, modo }) {
   }
 
   const handleCuotaChange = (index, field, value) => {
-    setCuotas(prev => {
-      const nuevosCuotas = [...prev]
+    
+    // Obtener el valor actual de cuotas
+    const cuotasActuales = Array.isArray(cuotas) ? cuotas : []
+    const nuevosCuotas = [...cuotasActuales]
+    
+    // Si es la fecha, convertir al formato ISO
+    if (field === 'fechaRendicion') {
+      nuevosCuotas[index][field] = formatDateForBackend(value)
+    } else {
       nuevosCuotas[index][field] = value
-      return nuevosCuotas
-    })
+    }
+    
+    
+    setCuotas(nuevosCuotas)
   }
 
   const handlePorcentajeCuotaChange = (index, i, field, value) => {
-    setCuotas(prev => {
-      const nuevosCuotas = [...prev]
+    
+    // Obtener el valor actual de cuotas
+    const cuotasActuales = Array.isArray(cuotas) ? cuotas : []
+    const nuevosCuotas = [...cuotasActuales]
+    
+    if (nuevosCuotas[index] && nuevosCuotas[index].porcentajes) {
       const nuevosPorcentajes = [...nuevosCuotas[index].porcentajes]
       nuevosPorcentajes[i][field] = value
       nuevosCuotas[index].porcentajes = nuevosPorcentajes
-      return nuevosCuotas
-    })
+    }
+    
+    
+    setCuotas(nuevosCuotas)
+  }
+
+  const handleRemoveCuota = (index) => {
+    
+    // Obtener el valor actual de cuotas
+    const cuotasActuales = Array.isArray(cuotas) ? cuotas : []
+    const nuevasCuotas = [...cuotasActuales]
+    nuevasCuotas.splice(index, 1)
+    
+    setCuotas(nuevasCuotas)
+  }
+
+  const handleRemovePorcentajeFromCuota = (cuotaIndex, porcentajeIndex) => {
+    
+    // Obtener el valor actual de cuotas
+    const cuotasActuales = Array.isArray(cuotas) ? cuotas : []
+    const nuevosCuotas = [...cuotasActuales]
+    
+    // Solo eliminar si hay más de un porcentaje
+    if (nuevosCuotas[cuotaIndex] && nuevosCuotas[cuotaIndex].porcentajes && nuevosCuotas[cuotaIndex].porcentajes.length > 1) {
+      nuevosCuotas[cuotaIndex].porcentajes.splice(porcentajeIndex, 1)
+    }
+    
+    
+    setCuotas(nuevosCuotas)
+  }
+
+  const handleAddPorcentajeToCuota = (cuotaIndex) => {
+    
+    // Obtener el valor actual de cuotas
+    const cuotasActuales = Array.isArray(cuotas) ? cuotas : []
+    const nuevosCuotas = [...cuotasActuales]
+    
+    if (nuevosCuotas[cuotaIndex]) {
+      nuevosCuotas[cuotaIndex].porcentajes.push({ valor: '', descuento: '' })
+    }
+    
+    
+    setCuotas(nuevosCuotas)
   }
 
   return (
@@ -108,7 +213,7 @@ function CuotasForm({ cuotas = [], setCuotas, modo }) {
                 onChange={(e) => handlePorcentajeChange(index, 'valor', e.target.value)}
                 min="0"
                 max="100"
-                step="0.01"
+                step="1"
               />
             </Col>
             <Col md={5}>
@@ -119,7 +224,7 @@ function CuotasForm({ cuotas = [], setCuotas, modo }) {
                 onChange={(e) => handlePorcentajeChange(index, 'descuento', e.target.value)}
                 min="0"
                 max="100"
-                step="0.01"
+                step="1"
               />
             </Col>
             {index === nuevaCuota.porcentajes.length - 1 && (
@@ -149,63 +254,99 @@ function CuotasForm({ cuotas = [], setCuotas, modo }) {
                 <th>Fecha de Rendición</th>
                 <th>Porcentajes de Cumplimiento</th>
                 <th>Descuentos Asociados</th>
+                {modo === "modificar" && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
-              {cuotas.map((cuota, index) => (
-                <tr key={index}>
-                  <td>{index + 1}</td>
-                  <td>
-                    {modo === "modificar" ? (
-                      <Form.Control
-                        type="date"
-                        value={cuota.fechaRendicion}
-                        onChange={e => handleCuotaChange(index, 'fechaRendicion', e.target.value)}
-                      />
-                    ) : (
-                      cuota.fechaRendicion
+              {cuotas.map((cuota, index) => {
+                
+                const maxPorcentajes = cuota.porcentajes ? cuota.porcentajes.length : 0
+                return cuota.porcentajes ? cuota.porcentajes.map((p, i) => (
+                  <tr key={`${index}-${i}`}>
+                    {i === 0 && (
+                      <td rowSpan={maxPorcentajes}>{index + 1}</td>
                     )}
-                  </td>
-                  <td>
-                    {cuota.porcentajes.map((p, i) => (
-                      <div key={i} className="mb-1">
+                    {i === 0 && (
+                      <td rowSpan={maxPorcentajes}>
                         {modo === "modificar" ? (
                           <Form.Control
+                            type="date"
+                            value={formatDateForInput(cuota.fechaRendicion)}
+                            onChange={e => handleCuotaChange(index, 'fechaRendicion', e.target.value)}
+                          />
+                        ) : (
+                          formatDateForInput(cuota.fechaRendicion)
+                        )}
+                      </td>
+                    )}
+                    <td>
+                      {modo === "modificar" ? (
+                        <div className="d-flex align-items-center">
+                          <Form.Control
                             type="number"
-                            value={p.valor}
+                            value={p.valor || ''}
                             onChange={e => handlePorcentajeCuotaChange(index, i, 'valor', e.target.value)}
                             min="0"
                             max="100"
-                            step="0.01"
-                            className="mb-1"
+                            step="1"
+                            className="me-2"
+                            style={{ width: '100px' }}
                           />
-                        ) : (
-                          <div>{p.valor}%</div>
-                        )}
-                      </div>
-                    ))}
-                  </td>
-                  <td>
-                    {cuota.porcentajes.map((p, i) => (
-                      <div key={i} className="mb-1">
-                        {modo === "modificar" ? (
-                          <Form.Control
-                            type="number"
-                            value={p.descuento}
-                            onChange={e => handlePorcentajeCuotaChange(index, i, 'descuento', e.target.value)}
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            className="mb-1"
-                          />
-                        ) : (
-                          <div>{p.descuento}%</div>
-                        )}
-                      </div>
-                    ))}
-                  </td>
-                </tr>
-              ))}
+                          {cuota.porcentajes.length > 1 && (
+                            <Button 
+                              variant="outline-danger" 
+                              size="sm"
+                              onClick={() => handleRemovePorcentajeFromCuota(index, i)}
+                              title="Eliminar porcentaje"
+                            >
+                              ×
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <div>{p.valor}%</div>
+                      )}
+                    </td>
+                    <td>
+                      {modo === "modificar" ? (
+                        <Form.Control
+                          type="number"
+                          value={p.descuento || ''}
+                          onChange={e => handlePorcentajeCuotaChange(index, i, 'descuento', e.target.value)}
+                          min="0"
+                          max="100"
+                          step="1"
+                          style={{ width: '100px' }}
+                        />
+                      ) : (
+                        <div>{p.descuento}%</div>
+                      )}
+                    </td>
+                    {modo === "modificar" && i === 0 && (
+                      <td rowSpan={maxPorcentajes}>
+                        <div className="d-flex flex-column gap-2">
+                          <Button 
+                            variant="danger" 
+                            size="sm" 
+                            onClick={() => handleRemoveCuota(index)}
+                            title="Eliminar cuota completa"
+                          >
+                            Eliminar Cuota
+                          </Button>
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            onClick={() => handleAddPorcentajeToCuota(index)}
+                            title="Agregar porcentaje"
+                          >
+                            + Porcentaje
+                          </Button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                )) : null
+              })}
             </tbody>
           </Table>
         </div>

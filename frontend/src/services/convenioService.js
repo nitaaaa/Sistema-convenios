@@ -54,13 +54,18 @@ export const actualizarConvenio = async (id, convenioData) => {
 }
 
 export const eliminarConvenio = async (id) => {
+  const token = localStorage.getItem('authToken');
   try {
-    const response = await axios.delete(`${API_URL}/convenios/${id}`)
-    return response.data
+    const response = await axios.delete(`${API_URL}/convenios/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Error al eliminar el convenio')
+    throw new Error(error.response?.data?.message || 'Error al eliminar el convenio');
   }
-}
+};
 
 export const obtenerConveniosPorAnio = async (anio) => {
   const token = localStorage.getItem('authToken');

@@ -50,13 +50,27 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
     }
   }, [initialData]);
 
+  // Inicializar campos de fecha cuando se cargan los datos iniciales
+  useEffect(() => {
+    if (initialData) {
+      setFormData(prev => ({
+        ...prev,
+        inicio: initialData.inicio || '',
+        termino: initialData.termino || ''
+      }));
+    }
+  }, [initialData]);
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
       // Limpiar el formato del monto antes de enviar
       const datosParaEnviar = {
         ...formData,
-        monto: limpiarFormatoMonto(formData.monto)
+        monto: limpiarFormatoMonto(formData.monto),
+        // Mapear los nombres de los campos de fecha para el backend
+        inicio: formData.inicio,
+        termino: formData.termino
       };
       await onSubmit(datosParaEnviar)
     } catch (error) {
@@ -287,9 +301,9 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
               <Form.Label>Fecha de Inicio</Form.Label>
               <Form.Control
                 type="date"
-                name="fechaInicio"
-                value={formData.inicio}
-                onChange={e => setFormData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                name="inicio"
+                value={formData.inicio || ''}
+                onChange={e => setFormData(prev => ({ ...prev, inicio: e.target.value }))}
                 required
               />
             </Form.Group>
@@ -299,9 +313,9 @@ function ConvenioForm({ initialData, onSubmit, modo}) {
               <Form.Label>Fecha de Fin</Form.Label>
               <Form.Control
                 type="date"
-                name="fechaFin"
-                value={formData.termino}
-                onChange={e => setFormData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                name="termino"
+                value={formData.termino || ''}
+                onChange={e => setFormData(prev => ({ ...prev, termino: e.target.value }))}
                 required
               />
             </Form.Group>

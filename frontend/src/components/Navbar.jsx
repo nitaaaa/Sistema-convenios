@@ -65,7 +65,7 @@ function AppNavbar() {
               <NavDropdown.Item href="/comunas/agregarConvenio">Agregar convenio</NavDropdown.Item>
               <NavDropdown.Header>Establecimientos</NavDropdown.Header>
               <NavDropdown.Item href="/establecimientos/crear">Crear Establecimiento</NavDropdown.Item>
-              <NavDropdown.Item href="/establecimientos/modificar">Modificar Establecimiento</NavDropdown.Item>
+              <NavDropdown.Item href="/establecimientos/editar">Editar Establecimiento</NavDropdown.Item>
               <NavDropdown.Item href="/establecimientos/eliminar">Eliminar Establecimiento</NavDropdown.Item>
               <NavDropdown.Item href="/establecimientos/ver">Ver Establecimientos</NavDropdown.Item>
             </NavDropdown>

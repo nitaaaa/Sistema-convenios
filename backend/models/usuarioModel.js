@@ -21,7 +21,7 @@ const crearUsuario = async ({ nombres, apellidoPaterno, apellidoMaterno, rut, co
     );
 
     // 2. Insertar establecimientos asociados si se proporcionan
-    console.log(establecimiento.length);
+    
     if (establecimiento && establecimiento.trim()) {
       const establecimientosIds = establecimiento.split(',').map(id => id.trim());
       
@@ -150,7 +150,7 @@ const buscarComunaDelUsuario = async (rutUsuario) => {
 
 const autenticarUsuario = async (rut, contrasena) => {
   const [rows] = await db.execute(
-    'SELECT * FROM usuarios WHERE rut = ? AND suspendido = 0',
+    'SELECT * FROM usuarios WHERE rut = ? AND (suspendido = 0 OR suspendido IS NULL)',
     [rut]
   );
   

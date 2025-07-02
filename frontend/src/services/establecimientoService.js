@@ -32,4 +32,31 @@ export const obtenerEstablecimientosPorUsuario = async (rut) => {
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Error al obtener los establecimientos del usuario');
   }
+};
+
+export const actualizarEstablecimiento = async (id, nombre, establecimientoPadreId = null) => {
+  const token = localStorage.getItem('authToken');
+  try {
+    const response = await axios.put(`${API_URL}/establecimientos/${id}`, { 
+      nombre, 
+      establecimientoPadreId 
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al actualizar el establecimiento');
+  }
+};
+
+export const eliminarEstablecimiento = async (id) => {
+  const token = localStorage.getItem('authToken');
+  try {
+    const response = await axios.delete(`${API_URL}/establecimientos/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al eliminar el establecimiento');
+  }
 }; 

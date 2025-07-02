@@ -1,5 +1,5 @@
 const db = require('../config/database');
-const { crearConvenio, getConveniosPorAnio, getConvenioPorId, crearCuota, crearDescuento, getCuotasPorConvenio, getDescuentosPorCuota, actualizarDatosConvenio, eliminarCuotasConvenio, eliminarComponentesConvenio } = require('../models/convenioModel');
+const { crearConvenio, getConveniosPorAnio, getConvenioPorId, crearCuota, crearDescuento, getCuotasPorConvenio, getDescuentosPorCuota, actualizarDatosConvenio, eliminarCuotasConvenio, eliminarComponentesConvenio, eliminarConvenio } = require('../models/convenioModel');
 const { crearComponente, getComponentesPorConvenio } = require('../models/componenteModel');
 const { crearIndicador, getIndicadoresPorComponente } = require('../models/indicadorModel');
 const { crearFormulaCalculo, getFormulasPorIndicador, getFormulaIdsByConvenio } = require('../models/formulaCalculoModel');
@@ -14,20 +14,20 @@ function validarCeldaExcel(valor) {
 }
 
 async function createConvenio(req, res) {
-  const { nombre, descripcion, fechaInicio, fechaFin, monto, componentes, cuotas } = req.body;
-  if (!nombre || !fechaInicio || !fechaFin || !monto) {
+  const { nombre, descripcion, inicio, termino, monto, componentes, cuotas } = req.body;
+  if (!nombre || !inicio || !termino || !monto) {
     return res.status(400).json({ message: 'Faltan campos obligatorios' });
   }
 
   // Validación 4: Fechas en el mismo año
-  const anioInicio = new Date(fechaInicio).getFullYear();
-  const anioFin = new Date(fechaFin).getFullYear();
+  const anioInicio = new Date(inicio).getFullYear();
+  const anioFin = new Date(termino).getFullYear();
   if (anioInicio !== anioFin) {
     //return res.status(400).json({ message: 'La fecha de inicio y fin deben ser del mismo año' });
   }
 
   // Validación: Fecha de inicio menor a fecha de fin
-  if (new Date(fechaInicio) >= new Date(fechaFin)) {
+  if (new Date(inicio) >= new Date(termino)) {
     return res.status(400).json({ message: 'La fecha de inicio debe ser menor a la fecha de fin' });
   }
 
@@ -119,7 +119,7 @@ async function createConvenio(req, res) {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-    const result = await crearConvenio({ nombre, descripcion, fechaInicio, fechaFin, monto }, connection);
+    const result = await crearConvenio({ nombre, descripcion, inicio, termino, monto }, connection);
     const convenioId = result.insertId;
 
     // Crear cuotas y descuentos
@@ -399,23 +399,53 @@ async function getFechasValidez(req, res) {
 // Actualizar convenio
 async function actualizarConvenio(req, res) {
   const { convenioId } = req.params;
-  const { nombre, descripcion, fechaInicio, fechaFin, monto, componentes, cuotas } = req.body;
+  const { nombre, descripcion, inicio, termino, monto, componentes, cuotas } = req.body;
   
-  if (!nombre || !fechaInicio || !fechaFin || !monto) {
-    return res.status(400).json({ message: 'Faltan campos obligatorios' });
+  // Obtener el convenio actual para comparar
+  const convenioActual = await getConvenioPorId(convenioId);
+  if (!convenioActual) {
+    return res.status(404).json({ message: 'No se encontró el convenio' });
   }
 
-  // Validación: Fecha de inicio menor a fecha de fin
-  if (new Date(fechaInicio) >= new Date(fechaFin)) {
-    return res.status(400).json({ message: 'La fecha de inicio debe ser menor a la fecha de fin' });
+  // Preparar objeto de datos a actualizar (solo campos que llegaron)
+  const datosActualizar = { id: convenioId };
+  
+  if (nombre !== undefined) {
+    datosActualizar.nombre = nombre;
+  }
+  if (descripcion !== undefined) {
+    datosActualizar.descripcion = descripcion;
+  }
+  if (inicio !== undefined) {
+    datosActualizar.inicio = inicio;
+  }
+  if (termino !== undefined) {
+    datosActualizar.termino = termino;
+  }
+  if (monto !== undefined) {
+    datosActualizar.monto = monto;
   }
 
-  // Validación: Monto entero
-  if (!Number.isInteger(Number(monto))) {
+  // Validaciones solo para campos que se van a actualizar
+  if (inicio !== undefined && termino !== undefined) {
+    if (new Date(inicio) >= new Date(termino)) {
+      return res.status(400).json({ message: 'La fecha de inicio debe ser menor a la fecha de fin' });
+    }
+  } else if (inicio !== undefined && convenioActual.termino) {
+    if (new Date(inicio) >= new Date(convenioActual.termino)) {
+      return res.status(400).json({ message: 'La fecha de inicio debe ser menor a la fecha de fin' });
+    }
+  } else if (termino !== undefined && convenioActual.inicio) {
+    if (new Date(convenioActual.inicio) >= new Date(termino)) {
+      return res.status(400).json({ message: 'La fecha de inicio debe ser menor a la fecha de fin' });
+    }
+  }
+
+  if (monto !== undefined && !Number.isInteger(Number(monto))) {
     return res.status(400).json({ message: 'El monto debe ser un valor entero' });
   }
 
-  // Validaciones de cuotas
+  // Validaciones de cuotas solo si se proporcionan
   if (Array.isArray(cuotas)) {
     for (const cuota of cuotas) {
       if (!cuota.fechaRendicion) {
@@ -504,8 +534,8 @@ async function actualizarConvenio(req, res) {
       id: convenioId, 
       nombre, 
       descripcion, 
-      fechaInicio, 
-      fechaFin, 
+      inicio, 
+      termino, 
       monto 
     }, connection);
 
@@ -571,11 +601,37 @@ async function actualizarConvenio(req, res) {
   }
 }
 
+// Eliminar convenio
+async function eliminarConvenioController(req, res) {
+  const { convenioId } = req.params;
+  
+  try {
+    // Verificar que el convenio existe
+    const convenio = await getConvenioPorId(convenioId);
+    if (!convenio) {
+      return res.status(404).json({ message: 'Convenio no encontrado' });
+    }
+    
+    // Eliminar el convenio y todos sus datos relacionados
+    const result = await eliminarConvenio(convenioId);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Convenio no encontrado' });
+    }
+    
+    res.json({ message: 'Convenio eliminado exitosamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al eliminar el convenio' });
+  }
+}
+
 module.exports = { 
   createConvenio, 
   obtenerConveniosPorAnio, 
   obtenerConvenioPorId,
   actualizarConvenio,
+  eliminarConvenioController,
   componentesPorConvenio, 
   indicadoresPorComponente, 
   formulasPorIndicador, 
