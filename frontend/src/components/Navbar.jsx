@@ -60,14 +60,13 @@ function AppNavbar() {
               <NavDropdown.Item href="/usuarios/restablecer-contrasena">Restablecer Contraseña</NavDropdown.Item>
             </NavDropdown>
 
-            <NavDropdown title="Administrar" id="administrar-dropdown">
-              <NavDropdown.Header>Comunas</NavDropdown.Header>
-              <NavDropdown.Item href="/comunas/agregarConvenio">Agregar convenio</NavDropdown.Item>
-              <NavDropdown.Header>Establecimientos</NavDropdown.Header>
+            <NavDropdown title="Establecimientos" id="establecimientos-dropdown">
+              
+              
               <NavDropdown.Item href="/establecimientos/crear">Crear Establecimiento</NavDropdown.Item>
               <NavDropdown.Item href="/establecimientos/editar">Editar Establecimiento</NavDropdown.Item>
               <NavDropdown.Item href="/establecimientos/eliminar">Eliminar Establecimiento</NavDropdown.Item>
-              <NavDropdown.Item href="/establecimientos/ver">Ver Establecimientos</NavDropdown.Item>
+              
             </NavDropdown>
 
             <NavDropdown title="REM" id="rem-dropdown">
@@ -85,7 +84,7 @@ function AppNavbar() {
             >
               {timeLeft > 0 && `Sesión: ${formatTime(timeLeft)}`}
             </span>
-            <NavDropdown title={user?.nombre || 'Usuario'} id="user-dropdown" align="end">
+            <NavDropdown title={user?.nombres || 'Usuario'} id="user-dropdown" align="end">
               <NavDropdown.Item href="/usuarios/perfil">Mi Perfil</NavDropdown.Item>
               <NavDropdown.Divider />
               <NavDropdown.Item onClick={logout}>Cerrar Sesión</NavDropdown.Item>

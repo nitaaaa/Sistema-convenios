@@ -40,4 +40,16 @@ export const obtenerArchivosRem = async (establecimientoId, mes, ano) => {
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Error al obtener los archivos REM');
   }
+};
+
+export const eliminarArchivoRem = async (id) => {
+  const token = localStorage.getItem('authToken');
+  try {
+    const response = await axios.delete(`${API_URL}/rem/eliminar/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al eliminar el archivo REM');
+  }
 };  

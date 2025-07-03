@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Container, Card, Form, Button, Alert, Spinner, Table, Pagination } from 'react-bootstrap';
-import { obtenerArchivosRem } from '../../services/remService';
+import { Container, Card, Form, Button, Alert, Spinner, Table, Pagination, Modal } from 'react-bootstrap';
+import { obtenerArchivosRem, eliminarArchivoRem } from '../../services/remService';
 import { obtenerTodosLosEstablecimientosPM } from '../../services/establecimientoService';
 import { meses, ordenarMeses } from '../../utils/dateUtils';
 import './VerRemPage.css';
@@ -23,6 +23,11 @@ function VerRemPage() {
 
   // Estados para ordenamiento
   const [archivosOrdenados, setArchivosOrdenados] = useState([]);
+
+  // Estados para el modal de eliminación
+  const [showModal, setShowModal] = useState(false);
+  const [archivoAEliminar, setArchivoAEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   // Generar años (desde 2020 hasta el año actual + 1)
   const anoActual = new Date().getFullYear();
@@ -137,6 +142,39 @@ function VerRemPage() {
   // Función para cambiar de página
   const cambiarPagina = (numeroPagina) => {
     setPaginaActual(numeroPagina);
+  };
+
+  // Función para mostrar modal de eliminación
+  const handleShowModal = (archivo) => {
+    setArchivoAEliminar(archivo);
+    setShowModal(true);
+  };
+
+  // Función para cerrar modal
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setArchivoAEliminar(null);
+    setEliminando(false);
+  };
+
+  // Función para eliminar archivo
+  const handleEliminar = async () => {
+    if (!archivoAEliminar) return;
+
+    setEliminando(true);
+    try {
+      await eliminarArchivoRem(archivoAEliminar.id);
+      setSuccess(`Archivo "${archivoAEliminar.nombreArchivo}" eliminado exitosamente`);
+      handleCloseModal();
+      
+      // Recargar la lista de archivos
+      await buscarArchivos();
+    } catch (error) {
+      setError('Error al eliminar el archivo: ' + error.message);
+      handleCloseModal();
+    } finally {
+      setEliminando(false);
+    }
   };
 
   // Generar elementos de paginación
@@ -354,39 +392,48 @@ function VerRemPage() {
                     <td>{meses.find(m => m.valor === archivo.mes.toString())?.nombre || archivo.mes}</td>
                     <td>{archivo.ano}</td>
                     <td>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={async () => {
-                          try {
-                            const token = localStorage.getItem('authToken');
-                            const response = await fetch(`${import.meta.env.VITE_API_URL}/rem/descargar/${archivo.id}`, {
-                              headers: {
-                                'Authorization': `Bearer ${token}`
+                      <div className="d-flex gap-1">
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const token = localStorage.getItem('authToken');
+                              const response = await fetch(`${import.meta.env.VITE_API_URL}/rem/descargar/${archivo.id}`, {
+                                headers: {
+                                  'Authorization': `Bearer ${token}`
+                                }
+                              });
+                              
+                              if (!response.ok) {
+                                throw new Error('Error al descargar el archivo');
                               }
-                            });
-                            
-                            if (!response.ok) {
-                              throw new Error('Error al descargar el archivo');
+                              
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = archivo.nombreArchivo || 'archivo-rem.xlsx';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              window.URL.revokeObjectURL(url);
+                            } catch (error) {
+                              console.error('Error al descargar:', error);
+                              alert('Error al descargar el archivo');
                             }
-                            
-                            const blob = await response.blob();
-                            const url = window.URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = archivo.nombreArchivo || 'archivo-rem.xlsx';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(url);
-                          } catch (error) {
-                            console.error('Error al descargar:', error);
-                            alert('Error al descargar el archivo');
-                          }
-                        }}
-                      >
-                        Descargar
-                      </Button>
+                          }}
+                        >
+                          Descargar
+                        </Button>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleShowModal(archivo)}
+                        >
+                          Eliminar
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -402,6 +449,59 @@ function VerRemPage() {
           {generarElementosPaginacion()}
         </Pagination>
       )}
+
+      {/* Modal de confirmación de eliminación */}
+      <Modal show={showModal} onHide={handleCloseModal} centered>
+        <Modal.Header closeButton={!eliminando}>
+          <Modal.Title>Confirmar Eliminación</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {archivoAEliminar && (
+            <div>
+              <Alert variant="warning">
+                <strong>¡Advertencia!</strong> Esta acción eliminará permanentemente el archivo REM:
+              </Alert>
+              <ul className="mb-0">
+                <li><strong>Nombre:</strong> {archivoAEliminar.nombreArchivo}</li>
+                <li><strong>Establecimiento:</strong> {archivoAEliminar.nombreEstablecimiento}</li>
+                <li><strong>Mes:</strong> {meses.find(m => m.valor === archivoAEliminar.mes.toString())?.nombre || archivoAEliminar.mes}</li>
+                <li><strong>Año:</strong> {archivoAEliminar.ano}</li>
+              </ul>
+              <Alert variant="danger" className="mt-3">
+                <strong>Esta acción no se puede deshacer.</strong> Se eliminará:
+                <ul className="mb-0 mt-2">
+                  <li>El archivo físico del servidor</li>
+                  <li>El registro de la base de datos</li>
+                  <li>Todos los resultados de cálculo asociados</li>
+                </ul>
+              </Alert>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary" 
+            onClick={handleCloseModal}
+            disabled={eliminando}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            variant="danger" 
+            onClick={handleEliminar}
+            disabled={eliminando}
+          >
+            {eliminando ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Eliminando...
+              </>
+            ) : (
+              'Eliminar Archivo'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 }

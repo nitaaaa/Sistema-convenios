@@ -17,6 +17,7 @@ import AppNavbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
 import useSessionTimeout from './hooks/useSessionTimeout'
+import MiPerfilPage from './pages/usuarios/MiPerfilPage'
 
 function AppContent() {
   const location = useLocation()
@@ -43,6 +44,7 @@ function AppContent() {
             <Route path="/usuarios/crear" element={<CrearUsuarioPage />} />
             <Route path="/usuarios/editar/" element={<EditarUsuarioPage />} />
             <Route path="/usuarios/restablecer-contrasena" element={<RestablecerContrasenaPage />} />
+            <Route path="/usuarios/perfil" element={<MiPerfilPage />} />
             {/* REM */}
             <Route path="/rem/subir" element={<SubirRemPage />} />
             <Route path="/rem/ver" element={<VerRemPage />} />

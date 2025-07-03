@@ -96,6 +96,35 @@ async function obtenerArchivosRemFiltrados(establecimientoId, mes, ano) {
   return rows;
 }
 
+async function eliminarRem(id) {
+  // Obtener información del REM antes de eliminarlo
+  const rem = await obtenerRemPorId(id);
+  if (!rem) {
+    throw new Error('REM no encontrado');
+  }
+
+  // Eliminar el archivo físico si existe
+  try {
+    if (fs.existsSync(rem.ruta)) {
+      fs.unlinkSync(rem.ruta);
+    }
+  } catch (error) {
+    console.warn(`No se pudo eliminar el archivo físico: ${rem.ruta}`, error.message);
+  }
+
+  // Eliminar resultados de cálculo asociados
+  await db.execute('DELETE FROM resultados_calculo WHERE rem_id = ?', [id]);
+
+  // Eliminar el registro de la base de datos
+  const [result] = await db.execute('DELETE FROM rem WHERE id = ?', [id]);
+  
+  if (result.affectedRows === 0) {
+    throw new Error('No se pudo eliminar el REM');
+  }
+
+  return { mensaje: 'REM eliminado exitosamente', ruta: rem.ruta };
+}
+
 module.exports = {
   getComunas,
   getEstablecimientosPorComuna,
@@ -103,5 +132,6 @@ module.exports = {
   registrarRem,
   getRemByRuta,
   obtenerArchivosRemFiltrados,
-  obtenerRemPorId
+  obtenerRemPorId,
+  eliminarRem
 }; 

@@ -1,6 +1,6 @@
 const XLSX = require('xlsx');
 const path = require('path');
-const { guardarArchivoRem, registrarRem, getRemByRuta, obtenerArchivosRemFiltrados, obtenerRemPorId } = require('../models/remModel');
+const { guardarArchivoRem, registrarRem, getRemByRuta, obtenerArchivosRemFiltrados, obtenerRemPorId, eliminarRem } = require('../models/remModel');
 const {buscarEstablecimientoPorNombreYComuna } = require('../models/establecimientoModel');
 const { getFormulaIdsValidasPorFecha, getFormulaById, guardarResultadoCalculo } = require('../models/formulaCalculoModel');
 const { buscarComunaPorNombre } = require('../models/comunaModel');
@@ -264,6 +264,39 @@ exports.descargarArchivoRem = async (req, res) => {
     console.error('Error al descargar archivo REM:', error);
     res.status(500).json({ 
       message: 'Error interno del servidor al descargar el archivo' 
+    });
+  }
+};
+
+exports.eliminarArchivoRem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ 
+        message: 'Se requiere el ID del archivo REM' 
+      });
+    }
+
+    // Eliminar el archivo REM
+    const resultado = await eliminarRem(id);
+    
+    res.json({ 
+      message: resultado.mensaje,
+      ruta: resultado.ruta
+    });
+    
+  } catch (error) {
+    console.error('Error al eliminar archivo REM:', error);
+    
+    if (error.message === 'REM no encontrado') {
+      return res.status(404).json({ 
+        message: 'Archivo REM no encontrado' 
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Error interno del servidor al eliminar el archivo' 
     });
   }
 }; 

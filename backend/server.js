@@ -61,7 +61,9 @@ const httpsOptions = {
 }
 
 const PORT = process.env.PORT || 3000
+const HOST = process.env.HOST || '0.0.0.0'
 
-https.createServer(httpsOptions, app).listen(PORT, () => {
-  console.log(`Servidor HTTPS corriendo en el puerto ${PORT}`)
+https.createServer(httpsOptions, app).listen(PORT, HOST, () => {
+  console.log(`Servidor HTTPS corriendo en https://${HOST}:${PORT}`)
+  console.log(`Accesible desde la red local en: https://[TU_IP_LOCAL]:${PORT}`)
 })

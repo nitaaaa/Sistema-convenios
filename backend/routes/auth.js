@@ -34,14 +34,30 @@ router.get('/microsoft', (req, res, next) => {
 
 router.get('/microsoft/callback', passport.authenticate('azuread-openidconnect', {
   failureRedirect: `${process.env.FRONTEND_URL}/login`
-}), (req, res) => {
-  const user = req.user
-  const token = jwt.sign({
-    email: user._json.preferred_username,
-    nombre: user.displayName
-  }, process.env.JWT_SECRET, { expiresIn: JWT_EXPIRATION })
+}), async (req, res) => {
+  try {
+    const user = req.user
+    const email = user._json.preferred_username
+    
+    // Buscar el usuario en la base de datos
+    const { buscarUsuarioPorCorreo } = require('../models/usuarioModel')
+    const usuario = await buscarUsuarioPorCorreo(email)
+    
+    if (!usuario) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=usuario_no_encontrado`)
+    }
+    
+    const token = jwt.sign({
+      email: usuario.correo,
+      nombre: `${usuario.nombres} ${usuario.apellido_paterno}`,
+      rut: usuario.rut
+    }, process.env.JWT_SECRET, { expiresIn: JWT_EXPIRATION })
 
-  res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}`)
+    res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}`)
+  } catch (error) {
+    console.error('Error en callback de Microsoft:', error)
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=error_interno`)
+  }
 })
 
 router.post('/login', async (req, res) => {
@@ -72,11 +88,12 @@ router.post('/login', async (req, res) => {
     
     // Preparar datos del usuario para el frontend
     const userData = {
-      nombre: usuario.nombres,
-      apellidoPaterno: usuario.apellido_paterno,
-      apellidoMaterno: usuario.apellido_materno,
+      nombres: usuario.nombres,
+      apellido_paterno: usuario.apellido_paterno,
+      apellido_materno: usuario.apellido_materno,
       rut: usuario.rut,
       correo: usuario.correo,
+      suspendido: usuario.suspendido
     };
     
     res.json({

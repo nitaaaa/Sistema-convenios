@@ -32,11 +32,12 @@ function LoginPage() {
           // Usamos el token recibido para autenticarnos en la consulta
           const usuario = await buscarUsuarioPorCorreo(email, token)
           const userData = {
-            nombre: usuario.data.nombres,
-            apellidoPaterno: usuario.data.apellidoPaterno,
-            apellidoMaterno: usuario.data.apellidoMaterno,
+            nombres: usuario.data.nombres,
+            apellido_paterno: usuario.data.apellido_paterno,
+            apellido_materno: usuario.data.apellido_materno,
             rut: usuario.data.rut,
             correo: usuario.data.correo,
+            suspendido: usuario.data.suspendido
           };
           
           // Guardar en localStorage y actualizar el contexto

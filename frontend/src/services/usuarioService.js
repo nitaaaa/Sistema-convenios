@@ -67,3 +67,11 @@ export const restablecerContrasena = async (rut, nuevaContrasena, token) => {
     }
   )
 }
+
+export const actualizarPerfil = async (formData, token) => {
+  return axios.put('/api/usuarios/perfil', formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
